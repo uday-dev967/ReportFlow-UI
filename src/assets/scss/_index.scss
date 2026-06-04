@@ -1,0 +1,8 @@
+// Modern SCSS Module System - Index file
+// This file forwards all SCSS modules to make them globally available
+
+// Forward all partials with their variables, mixins, and functions
+@forward './variables';
+@forward './mediaQuery';
+@forward './mixins';
+

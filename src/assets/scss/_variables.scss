@@ -1,0 +1,14 @@
+// @import './dynamicVariables.css';
+// Before adding any color please have a look at this google doc https://docs.google.com/document/d/1ZcWW2L234tJRJ_-NqhopNy9hTxXApBoLkCWiCG1dWOg/edit?usp=sharing
+// Please follow the correct prefix -> color, border, background$unbounded-font: 'Unbounded', sans-serif;
+$unbounded-font: var(--unbounded-font);
+
+$color-primary: var(--color-primary);
+$color-white: var(--color-white);
+$color-black: var(--color-black);
+
+$border-white: var(--border-white);
+$border-black: var(--border-black);
+
+$background-white: var(--background-white);
+$background-black: var(--background-black);

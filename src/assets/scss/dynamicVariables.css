@@ -1,0 +1,15 @@
+/*Before adding any color please have a look at this google doc https://docs.google.com/document/d/1ZcWW2L234tJRJ_-NqhopNy9hTxXApBoLkCWiCG1dWOg/edit?usp=sharing */
+
+:root {
+  --unbounded-font: 'Unbounded', sans-serif;
+
+  --primary-color: #000000;
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  --border-white: #ffff;
+  --border-black: #000;
+
+  --background-white: #fff;
+  --background-black: #000;
+}
