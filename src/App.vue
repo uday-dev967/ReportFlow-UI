@@ -1,39 +1,68 @@
 <script setup>
-// vue imports
+import { onMounted, onBeforeUnmount } from 'vue';
 import { RouterView, useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
-//  stores
 import { useCommon } from '@/stores/common.store.js';
-// composables
 import { useRemIndicator } from '@/composables/remIndicatorComposable';
-// components
+import { useScreenshotScheduler } from '@/composables/useScreenshotScheduler.js';
 import CircularProgressBar from '@/components/sharedComponents/CircularProgressBar.vue';
+import OToast from '@/components/sharedComponents/OToast.vue';
+import AppSidebar from '@/components/layout/AppSidebar.vue';
+import AppHeader from '@/components/layout/AppHeader.vue';
+import DashboardCaptureHost from '@/components/dashboard/DashboardCaptureHost.vue';
 
 const useCommonStore = useCommon();
-let { commonLoaderState } = storeToRefs(useCommonStore);
-
+const { commonLoaderState } = storeToRefs(useCommonStore);
 const { remIndicatorRef } = useRemIndicator();
 const route = useRoute();
 
-const init = () => {
-  // Call any API call here that needs to happen on app initialization
-};
+const { start, stop } = useScreenshotScheduler();
 
-init();
+onMounted(() => {
+  start();
+});
+
+onBeforeUnmount(() => {
+  stop();
+});
 </script>
 
 <template>
-  <div class="app-wrapper">
-    <RouterView :key="route.fullPath" />
-    <CircularProgressBar v-if="commonLoaderState"></CircularProgressBar>
+  <DashboardCaptureHost />
+  <div class="app-layout">
+    <AppSidebar />
+    <div class="app-main">
+      <AppHeader />
+      <main class="app-content">
+        <RouterView :key="route.fullPath" />
+      </main>
+    </div>
+    <CircularProgressBar v-if="commonLoaderState" />
+    <OToast />
   </div>
   <div id="remIndicator" ref="remIndicatorRef"></div>
 </template>
 
 <style lang="scss" scoped>
-.app-wrapper {
+.app-layout {
   height: 100%;
   width: 100%;
+  display: flex;
+  overflow: hidden;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  background-color: var(--rf-page-bg, #f1f5f9);
 }
 
 #remIndicator {

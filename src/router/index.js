@@ -1,15 +1,30 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
-import HomeWrapper from '../views/HomeWrapper.vue';
 import LoginWrapper from '../views/LoginWrapper.vue';
+import DashboardView from '../views/DashboardView.vue';
+import SchedulerView from '../views/SchedulerView.vue';
+import GroupsView from '../views/GroupsView.vue';
 
 const router = createRouter({
-  // history: createWebHistory(import.meta.env.BASE_URL),
   history: createWebHashHistory(),
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: HomeWrapper,
+      redirect: '/dashboard',
+    },
+    {
+      path: '/dashboard',
+      name: 'dashboard',
+      component: DashboardView,
+    },
+    {
+      path: '/scheduler',
+      name: 'scheduler',
+      component: SchedulerView,
+    },
+    {
+      path: '/groups',
+      name: 'groups',
+      component: GroupsView,
     },
     {
       path: '/login',

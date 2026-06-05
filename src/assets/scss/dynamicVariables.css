@@ -12,4 +12,39 @@
 
   --background-white: #fff;
   --background-black: #000;
+
+  /* ReportFlow design tokens */
+  --rf-sidebar-bg: #1a2332;
+  --rf-sidebar-text: #94a3b8;
+  --rf-sidebar-text-hover: #cbd5e1;
+  --rf-sidebar-active-text: #ffffff;
+  --rf-sidebar-active-bg: rgba(255, 255, 255, 0.12);
+  --rf-sidebar-hover-bg: rgba(255, 255, 255, 0.06);
+  --rf-sidebar-width: 14rem;
+
+  --rf-header-bg: #ffffff;
+  --rf-header-border: #e2e8f0;
+  --rf-header-height: 3.75rem;
+
+  --rf-accent: #2563eb;
+  --rf-accent-hover: #1d4ed8;
+  --rf-accent-light: #eff6ff;
+
+  --rf-page-bg: #f1f5f9;
+  --rf-surface: #ffffff;
+  --rf-surface-border: #e2e8f0;
+  --rf-surface-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  --rf-text-primary: #1e293b;
+  --rf-text-secondary: #64748b;
+  --rf-text-muted: #94a3b8;
+
+  --rf-success: #10b981;
+  --rf-success-light: #ecfdf5;
+  --rf-warning: #f59e0b;
+  --rf-warning-light: #fffbeb;
+  --rf-error: #ef4444;
+  --rf-error-light: #fef2f2;
+  --rf-info: #3b82f6;
+  --rf-info-light: #eff6ff;
 }

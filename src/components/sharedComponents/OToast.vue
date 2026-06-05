@@ -1,6 +1,6 @@
 <script setup>
 import { computed, inject, watch } from 'vue';
-import { useToast } from '../composables/useToastComposable';  
+import { useToast } from '@/composables/useToastComposable';
 
 const convertRemToPixels = inject('convertRemToPixels', null);
 

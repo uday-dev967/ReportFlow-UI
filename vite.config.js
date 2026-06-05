@@ -21,6 +21,19 @@ export default defineConfig({
   },
   server: {
     host: true,
+    proxy: {
+      '/socket.io': {
+        target: 'http://127.0.0.1:5051',
+        ws: true,
+        changeOrigin: true,
+      },
+      '/Automation': {
+        target: 'http://127.0.0.1:5051',
+        changeOrigin: true,
+        timeout: 300_000,
+        proxyTimeout: 300_000,
+      },
+    },
   },
   base: './',
 });
