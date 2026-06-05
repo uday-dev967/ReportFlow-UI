@@ -1,9 +1,13 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { MOCK_STATES, DAILY_TREND } from '@/data/mockData.js';
-import { dispatchScreenshot, fetchSendLogs } from '@/network/automation.service.js';
+import { ref, onMounted } from 'vue';
+import {
+  dispatchScreenshot,
+  fetchSendLogs,
+  fetchDashboardSummary,
+  fetchDashboardTrend,
+  fetchDashboardFilters,
+} from '@/network/automation.service.js';
 import { useToast } from '@/composables/useToastComposable.js';
-import { captureElementToBase64, defaultReportCaption } from '@/composables/useDashboardCapture.js';
 import FiltersBar from '@/components/dashboard/FiltersBar.vue';
 import KpiCards from '@/components/dashboard/KpiCards.vue';
 import SalesTable from '@/components/dashboard/SalesTable.vue';
@@ -12,44 +16,89 @@ import SendPanel from '@/components/dashboard/SendPanel.vue';
 
 const { success, error: toastError } = useToast();
 
+const filterOptions = ref({
+  states: [],
+  regions: [],
+  managers: [],
+  reportTypes: ['Productivity Report'],
+  dateRanges: [],
+});
+
 const activeFilters = ref({
   dateFrom: '',
   dateTo: '',
   states: [],
   region: '',
   manager: '',
+  reportType: 'Productivity Report',
+  dateRange: 'last30days',
 });
 
+const dashboardData = ref([]);
+const dailyTrend = ref([]);
+const loading = ref(false);
 const lastLog = ref(null);
 const sending = ref(false);
 const sendResult = ref(null);
 
-const filteredData = computed(() => {
-  let data = MOCK_STATES;
-  const { states, region, manager } = activeFilters.value;
-  if (states?.length) data = data.filter((r) => states.includes(r.state));
-  if (region) data = data.filter((r) => r.region === region);
-  if (manager) data = data.filter((r) => r.manager === manager);
-  return data;
-});
+function buildApiFilters(filters) {
+  const apiFilters = {
+    reportType: filters.reportType || 'Productivity Report',
+    dateRange: filters.dateRange || 'today',
+  };
+  if (filters.states?.length) apiFilters.states = filters.states;
+  if (filters.region) apiFilters.regions = [filters.region];
+  if (filters.manager) apiFilters.managers = [filters.manager];
+  if (filters.dateFrom) apiFilters.startDate = filters.dateFrom;
+  if (filters.dateTo) apiFilters.endDate = filters.dateTo;
+  return apiFilters;
+}
 
-const filteredTrend = computed(() => {
-  const { dateFrom, dateTo } = activeFilters.value;
-  const trend = DAILY_TREND;
-  if (!dateFrom && !dateTo) return trend.slice(-30);
-  return trend.filter((d) => {
-    if (dateFrom && d.date < dateFrom) return false;
-    if (dateTo && d.date > dateTo) return false;
-    return true;
-  });
-});
+async function loadDashboard(filters) {
+  loading.value = true;
+  const apiFilters = buildApiFilters(filters);
+
+  const [summaryRes, trendRes] = await Promise.all([
+    fetchDashboardSummary(apiFilters),
+    fetchDashboardTrend({
+      dateRange: apiFilters.dateRange,
+      startDate: apiFilters.startDate,
+      endDate: apiFilters.endDate,
+    }),
+  ]);
+
+  loading.value = false;
+
+  if (summaryRes.ok) {
+    dashboardData.value = summaryRes.data.rows || [];
+  } else {
+    dashboardData.value = [];
+    toastError(summaryRes.message || 'Failed to load dashboard data');
+  }
+
+  if (trendRes.ok) {
+    dailyTrend.value = trendRes.data.trend || [];
+  } else {
+    dailyTrend.value = [];
+  }
+}
 
 const applyFilters = (filters) => {
   activeFilters.value = { ...filters };
+  loadDashboard(filters);
 };
 
 const resetFilters = () => {
-  activeFilters.value = { dateFrom: '', dateTo: '', states: [], region: '', manager: '' };
+  activeFilters.value = {
+    dateFrom: '',
+    dateTo: '',
+    states: [],
+    region: '',
+    manager: '',
+    reportType: 'Productivity Report',
+    dateRange: 'last30days',
+  };
+  loadDashboard(activeFilters.value);
 };
 
 const handleSendNow = async () => {
@@ -57,13 +106,9 @@ const handleSendNow = async () => {
   sendResult.value = null;
 
   try {
-    const { imageBase64, mimeType, imageBlob } = await captureElementToBase64();
-
+    const apiFilters = buildApiFilters(activeFilters.value);
     const result = await dispatchScreenshot({
-      imageBlob,
-      imageBase64,
-      mimeType,
-      caption: defaultReportCaption(),
+      filters: apiFilters,
       manual: true,
     });
 
@@ -98,21 +143,43 @@ const handleSendNow = async () => {
 };
 
 onMounted(async () => {
-  const res = await fetchSendLogs(1);
-  if (res.ok && res.data?.logs?.length) {
-    lastLog.value = res.data.logs[0];
+  const [filtersRes, logsRes] = await Promise.all([
+    fetchDashboardFilters(),
+    fetchSendLogs(1),
+  ]);
+
+  if (filtersRes.ok) {
+    filterOptions.value = {
+      states: filtersRes.data.states || [],
+      regions: filtersRes.data.regions || [],
+      managers: filtersRes.data.managers || [],
+      reportTypes: filtersRes.data.reportTypes || ['Productivity Report'],
+      dateRanges: filtersRes.data.dateRanges || [],
+    };
   }
+
+  if (logsRes.ok && logsRes.data?.logs?.length) {
+    lastLog.value = logsRes.data.logs[0];
+  }
+
+  await loadDashboard(activeFilters.value);
 });
 </script>
 
 <template>
   <div class="dashboard-view">
-    <FiltersBar @apply="applyFilters" @reset="resetFilters" />
+    <FiltersBar
+      :filter-options="filterOptions"
+      @apply="applyFilters"
+      @reset="resetFilters"
+    />
 
-    <div id="dashboard-capture">
-      <KpiCards :data="filteredData" />
-      <SalesTable :data="filteredData" />
-      <ChartSection :data="filteredData" :daily-trend="filteredTrend" />
+    <div v-if="loading" class="loading-state">Loading dashboard data…</div>
+
+    <div v-else id="dashboard-capture">
+      <KpiCards :data="dashboardData" />
+      <SalesTable :data="dashboardData" />
+      <ChartSection :data="dashboardData" :daily-trend="dailyTrend" />
     </div>
 
     <SendPanel
@@ -133,5 +200,12 @@ onMounted(async () => {
 
 #dashboard-capture {
   background: var(--rf-page-bg, #f1f5f9);
+}
+
+.loading-state {
+  padding: 2rem;
+  text-align: center;
+  color: var(--rf-text-secondary, #64748b);
+  font-size: 0.875rem;
 }
 </style>

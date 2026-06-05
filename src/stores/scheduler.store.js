@@ -9,7 +9,6 @@ import {
   deactivateSchedule,
   fetchSendLogs,
 } from '@/network/automation.service.js';
-import { reloadScreenshotScheduler } from '@/composables/useScreenshotScheduler.js';
 
 export const useSchedulerStore = defineStore('scheduler', () => {
   const schedules = ref([]);
@@ -39,13 +38,21 @@ export const useSchedulerStore = defineStore('scheduler', () => {
       timezone: formData.timezone || 'Asia/Kolkata',
       caption: formData.caption || '',
       isActive: formData.isActive !== false,
+      filters: formData.filters || {
+        states: [],
+        regions: [],
+        managers: [],
+        reportType: 'Productivity Report',
+        dateRange: 'last30days',
+        startDate: '',
+        endDate: '',
+      },
     };
     const res = editId
       ? await updateSchedule(editId, payload)
       : await createSchedule(payload);
     if (res.ok) {
       await loadSchedules();
-      await reloadScreenshotScheduler();
     }
     return res;
   }
@@ -54,7 +61,6 @@ export const useSchedulerStore = defineStore('scheduler', () => {
     const res = await deleteSchedule(id);
     if (res.ok) {
       schedules.value = schedules.value.filter((s) => s._id !== id);
-      await reloadScreenshotScheduler();
     }
     return res;
   }
@@ -62,16 +68,12 @@ export const useSchedulerStore = defineStore('scheduler', () => {
   async function toggleSchedule(schedule) {
     const id = schedule._id;
     const wasRunning = schedule.isRunning;
-    // Optimistic update
     const idx = schedules.value.findIndex((s) => s._id === id);
     if (idx !== -1) schedules.value[idx] = { ...schedules.value[idx], isRunning: !wasRunning };
 
     const res = wasRunning ? await deactivateSchedule(id) : await activateSchedule(id);
     if (!res.ok) {
-      // Revert on failure
       if (idx !== -1) schedules.value[idx] = { ...schedules.value[idx], isRunning: wasRunning };
-    } else {
-      await reloadScreenshotScheduler();
     }
     return res;
   }

@@ -27,8 +27,8 @@ const lastSentAt = computed(() => {
       <div class="send-info">
         <div class="send-title">Send Report to WhatsApp Groups</div>
         <div class="send-desc">
-          Takes a screenshot of this dashboard and sends it to all active registered WhatsApp
-          groups (does not require a schedule to be ON).
+          Generates a report image on the server using the current dashboard filters and sends it
+          to all active registered WhatsApp groups (does not require a schedule to be ON).
         </div>
       </div>
 
@@ -49,7 +49,7 @@ const lastSentAt = computed(() => {
               fill="none"
             />
           </svg>
-          {{ sending ? 'Sending…' : 'Take Screenshot & Send Now' }}
+          {{ sending ? 'Sending…' : 'Generate & Send Report Now' }}
         </button>
       </div>
     </div>

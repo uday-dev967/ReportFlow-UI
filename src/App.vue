@@ -1,34 +1,20 @@
 <script setup>
-import { onMounted, onBeforeUnmount } from 'vue';
 import { RouterView, useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useCommon } from '@/stores/common.store.js';
 import { useRemIndicator } from '@/composables/remIndicatorComposable';
-import { useScreenshotScheduler } from '@/composables/useScreenshotScheduler.js';
 import CircularProgressBar from '@/components/sharedComponents/CircularProgressBar.vue';
 import OToast from '@/components/sharedComponents/OToast.vue';
 import AppSidebar from '@/components/layout/AppSidebar.vue';
 import AppHeader from '@/components/layout/AppHeader.vue';
-import DashboardCaptureHost from '@/components/dashboard/DashboardCaptureHost.vue';
 
 const useCommonStore = useCommon();
 const { commonLoaderState } = storeToRefs(useCommonStore);
 const { remIndicatorRef } = useRemIndicator();
 const route = useRoute();
-
-const { start, stop } = useScreenshotScheduler();
-
-onMounted(() => {
-  start();
-});
-
-onBeforeUnmount(() => {
-  stop();
-});
 </script>
 
 <template>
-  <DashboardCaptureHost />
   <div class="app-layout">
     <AppSidebar />
     <div class="app-main">

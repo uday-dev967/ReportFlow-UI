@@ -1,8 +1,7 @@
 <script setup>
 import { ref, reactive, watch, onMounted, computed } from 'vue';
 import { buildCron, parseCron, DAY_LABELS, PRESET_CRONS } from '@/utils/cronUtils.js';
-import { fetchGroups } from '@/network/automation.service.js';
-import { REPORT_TYPES } from '@/data/mockData.js';
+import { fetchGroups, fetchDashboardFilters } from '@/network/automation.service.js';
 
 const props = defineProps({
   schedule: { type: Object, default: null },
@@ -12,22 +11,38 @@ const emit = defineEmits(['save', 'cancel']);
 
 const groups = ref([]);
 const groupsLoading = ref(false);
+const filterOptions = ref({
+  states: [],
+  regions: [],
+  managers: [],
+  reportTypes: ['Productivity Report'],
+  dateRanges: [],
+});
 const errors = reactive({});
 
 const form = reactive({
   name: '',
-  reportType: REPORT_TYPES[0],
+  reportType: 'Productivity Report',
   groupIds: [],
   frequency: 'preset',
-  presetCron: PRESET_CRONS[5].value, // default: Every 1 hour
+  presetCron: PRESET_CRONS[5].value,
   time: '09:00',
   days: [1, 2, 3, 4, 5],
   customCron: '',
   activeFrom: '',
   activeUntil: '',
+  filterStates: [],
+  filterRegions: [],
+  filterManagers: [],
+  filterDateRange: 'last30days',
+  filterDateFrom: '',
+  filterDateTo: '',
 });
 
 const groupDropdownOpen = ref(false);
+const stateDropdownOpen = ref(false);
+const regionDropdownOpen = ref(false);
+const managerDropdownOpen = ref(false);
 
 const selectedGroupLabels = computed(() => {
   if (!form.groupIds.length) return 'Select groups';
@@ -36,6 +51,24 @@ const selectedGroupLabels = computed(() => {
     return g?.name || '1 group selected';
   }
   return `${form.groupIds.length} groups selected`;
+});
+
+const stateFilterLabel = computed(() => {
+  if (!form.filterStates.length) return 'All States';
+  if (form.filterStates.length === 1) return form.filterStates[0];
+  return `${form.filterStates.length} states selected`;
+});
+
+const regionFilterLabel = computed(() => {
+  if (!form.filterRegions.length) return 'All Regions';
+  if (form.filterRegions.length === 1) return form.filterRegions[0];
+  return `${form.filterRegions.length} regions selected`;
+});
+
+const managerFilterLabel = computed(() => {
+  if (!form.filterManagers.length) return 'All Managers';
+  if (form.filterManagers.length === 1) return form.filterManagers[0];
+  return `${form.filterManagers.length} managers selected`;
 });
 
 const toggleGroup = (id) => {
@@ -50,6 +83,24 @@ const toggleDay = (d) => {
   else form.days.splice(idx, 1);
 };
 
+const toggleFilterState = (state) => {
+  const idx = form.filterStates.indexOf(state);
+  if (idx === -1) form.filterStates.push(state);
+  else form.filterStates.splice(idx, 1);
+};
+
+const toggleFilterRegion = (region) => {
+  const idx = form.filterRegions.indexOf(region);
+  if (idx === -1) form.filterRegions.push(region);
+  else form.filterRegions.splice(idx, 1);
+};
+
+const toggleFilterManager = (manager) => {
+  const idx = form.filterManagers.indexOf(manager);
+  if (idx === -1) form.filterManagers.push(manager);
+  else form.filterManagers.splice(idx, 1);
+};
+
 const populate = (s) => {
   if (!s) {
     form.name = '';
@@ -61,11 +112,18 @@ const populate = (s) => {
     form.customCron = '';
     form.activeFrom = '';
     form.activeUntil = '';
+    form.reportType = filterOptions.value.reportTypes?.[0] || 'Productivity Report';
+    form.filterStates = [];
+    form.filterRegions = [];
+    form.filterManagers = [];
+    form.filterDateRange = 'last30days';
+    form.filterDateFrom = '';
+    form.filterDateTo = '';
     return;
   }
   const parsed = parseCron(s.cron);
   form.name = s.name || '';
-  form.reportType = REPORT_TYPES[0];
+  form.reportType = s.filters?.reportType || filterOptions.value.reportTypes?.[0] || 'Productivity Report';
   form.groupIds = (s.groups?.length ? s.groups : s.group ? [s.group] : []).map((g) =>
     typeof g === 'object' ? g._id : g,
   );
@@ -76,15 +134,33 @@ const populate = (s) => {
   form.customCron = parsed.customCron || '';
   form.activeFrom = '';
   form.activeUntil = '';
+  form.filterStates = s.filters?.states ? [...s.filters.states] : [];
+  form.filterRegions = s.filters?.regions ? [...s.filters.regions] : [];
+  form.filterManagers = s.filters?.managers ? [...s.filters.managers] : [];
+  form.filterDateRange = s.filters?.dateRange || 'last30days';
+  form.filterDateFrom = s.filters?.startDate || '';
+  form.filterDateTo = s.filters?.endDate || '';
 };
 
 watch(() => props.schedule, populate, { immediate: true });
 
 onMounted(async () => {
   groupsLoading.value = true;
-  const res = await fetchGroups();
+  const [groupsRes, filtersRes] = await Promise.all([fetchGroups(), fetchDashboardFilters()]);
   groupsLoading.value = false;
-  if (res.ok) groups.value = res.data.groups || [];
+  if (groupsRes.ok) groups.value = groupsRes.data.groups || [];
+  if (filtersRes.ok) {
+    filterOptions.value = {
+      states: filtersRes.data.states || [],
+      regions: filtersRes.data.regions || [],
+      managers: filtersRes.data.managers || [],
+      reportTypes: filtersRes.data.reportTypes || ['Productivity Report'],
+      dateRanges: filtersRes.data.dateRanges || [],
+    };
+    if (!props.schedule) {
+      form.reportType = filterOptions.value.reportTypes[0] || 'Productivity Report';
+    }
+  }
 });
 
 const validate = () => {
@@ -113,6 +189,15 @@ const handleSave = () => {
     cron,
     timezone: 'Asia/Kolkata',
     isActive: true,
+    filters: {
+      states: [...form.filterStates],
+      regions: [...form.filterRegions],
+      managers: [...form.filterManagers],
+      reportType: form.reportType,
+      dateRange: form.filterDateRange,
+      startDate: form.filterDateFrom || '',
+      endDate: form.filterDateTo || '',
+    },
   });
 };
 </script>
@@ -130,7 +215,6 @@ const handleSave = () => {
       </div>
 
       <div class="drawer-body">
-        <!-- Name -->
         <div class="field-group" :class="{ error: errors.name }">
           <label class="field-label">Schedule Name <span class="required">*</span></label>
           <input
@@ -142,15 +226,13 @@ const handleSave = () => {
           <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
         </div>
 
-        <!-- Report Type -->
         <div class="field-group">
           <label class="field-label">Report</label>
           <select v-model="form.reportType" class="field-input">
-            <option v-for="t in REPORT_TYPES" :key="t" :value="t">{{ t }}</option>
+            <option v-for="t in filterOptions.reportTypes" :key="t" :value="t">{{ t }}</option>
           </select>
         </div>
 
-        <!-- Target Groups -->
         <div class="field-group" :class="{ error: errors.groupIds }">
           <label class="field-label">Target Groups <span class="required">*</span></label>
           <div class="dropdown-wrapper">
@@ -185,7 +267,133 @@ const handleSave = () => {
           <span v-if="errors.groupIds" class="field-error">{{ errors.groupIds }}</span>
         </div>
 
-        <!-- Frequency -->
+        <div class="section-divider">
+          <span>Report Filters</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Date Range Preset</label>
+          <select v-model="form.filterDateRange" class="field-input">
+            <option
+              v-for="dr in filterOptions.dateRanges"
+              :key="dr.value"
+              :value="dr.value"
+            >
+              {{ dr.label }}
+            </option>
+            <option v-if="!filterOptions.dateRanges?.length" value="last30days">Last 30 Days</option>
+          </select>
+          <span class="field-hint">Used when custom dates below are not set</span>
+        </div>
+
+        <div class="fields-row">
+          <div class="field-group">
+            <label class="field-label">Date From</label>
+            <input v-model="form.filterDateFrom" type="date" class="field-input" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">Date To</label>
+            <input v-model="form.filterDateTo" type="date" class="field-input" />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">States</label>
+          <div class="dropdown-wrapper">
+            <button
+              type="button"
+              class="field-input dropdown-trigger"
+              @click="stateDropdownOpen = !stateDropdownOpen"
+            >
+              <span class="trigger-text">{{ stateFilterLabel }}</span>
+              <svg viewBox="0 0 16 16" fill="none" class="chevron" :class="{ rotated: stateDropdownOpen }">
+                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+            </button>
+            <div v-if="stateDropdownOpen" class="group-dropdown">
+              <label
+                v-for="s in filterOptions.states"
+                :key="s"
+                class="group-option"
+                :class="{ checked: form.filterStates.includes(s) }"
+              >
+                <input
+                  type="checkbox"
+                  :checked="form.filterStates.includes(s)"
+                  @change="toggleFilterState(s)"
+                />
+                <span class="option-name">{{ s }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Regions</label>
+          <div class="dropdown-wrapper">
+            <button
+              type="button"
+              class="field-input dropdown-trigger"
+              @click="regionDropdownOpen = !regionDropdownOpen"
+            >
+              <span class="trigger-text">{{ regionFilterLabel }}</span>
+              <svg viewBox="0 0 16 16" fill="none" class="chevron" :class="{ rotated: regionDropdownOpen }">
+                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+            </button>
+            <div v-if="regionDropdownOpen" class="group-dropdown">
+              <label
+                v-for="r in filterOptions.regions"
+                :key="r"
+                class="group-option"
+                :class="{ checked: form.filterRegions.includes(r) }"
+              >
+                <input
+                  type="checkbox"
+                  :checked="form.filterRegions.includes(r)"
+                  @change="toggleFilterRegion(r)"
+                />
+                <span class="option-name">{{ r }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Managers</label>
+          <div class="dropdown-wrapper">
+            <button
+              type="button"
+              class="field-input dropdown-trigger"
+              @click="managerDropdownOpen = !managerDropdownOpen"
+            >
+              <span class="trigger-text">{{ managerFilterLabel }}</span>
+              <svg viewBox="0 0 16 16" fill="none" class="chevron" :class="{ rotated: managerDropdownOpen }">
+                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+            </button>
+            <div v-if="managerDropdownOpen" class="group-dropdown">
+              <label
+                v-for="m in filterOptions.managers"
+                :key="m"
+                class="group-option"
+                :class="{ checked: form.filterManagers.includes(m) }"
+              >
+                <input
+                  type="checkbox"
+                  :checked="form.filterManagers.includes(m)"
+                  @change="toggleFilterManager(m)"
+                />
+                <span class="option-name">{{ m }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-divider">
+          <span>Schedule Timing</span>
+        </div>
+
         <div class="field-group">
           <label class="field-label">Frequency <span class="required">*</span></label>
           <div class="radio-group">
@@ -208,7 +416,6 @@ const handleSave = () => {
           </div>
         </div>
 
-        <!-- Preset interval select -->
         <div v-if="form.frequency === 'preset'" class="field-group" :class="{ error: errors.presetCron }">
           <label class="field-label">Interval <span class="required">*</span></label>
           <select v-model="form.presetCron" class="field-input">
@@ -219,7 +426,6 @@ const handleSave = () => {
           <span v-if="errors.presetCron" class="field-error">{{ errors.presetCron }}</span>
         </div>
 
-        <!-- Time picker (daily + weekly) -->
         <div
           v-if="form.frequency === 'daily' || form.frequency === 'weekly'"
           class="field-group"
@@ -230,7 +436,6 @@ const handleSave = () => {
           <span v-if="errors.time" class="field-error">{{ errors.time }}</span>
         </div>
 
-        <!-- Days of week (weekly only) -->
         <div v-if="form.frequency === 'weekly'" class="field-group" :class="{ error: errors.days }">
           <label class="field-label">Days of Week <span class="required">*</span></label>
           <div class="days-grid">
@@ -248,7 +453,6 @@ const handleSave = () => {
           <span v-if="errors.days" class="field-error">{{ errors.days }}</span>
         </div>
 
-        <!-- Custom cron -->
         <div v-if="form.frequency === 'custom'" class="field-group" :class="{ error: errors.customCron }">
           <label class="field-label">Cron Expression <span class="required">*</span></label>
           <input
@@ -261,7 +465,6 @@ const handleSave = () => {
           <span v-if="errors.customCron" class="field-error">{{ errors.customCron }}</span>
         </div>
 
-        <!-- Active From / Until -->
         <div class="fields-row">
           <div class="field-group">
             <label class="field-label">Active From</label>
@@ -350,6 +553,29 @@ const handleSave = () => {
   display: flex;
   flex-direction: column;
   gap: 1.125rem;
+}
+
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+
+  span {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--rf-text-secondary);
+    white-space: nowrap;
+  }
+
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--rf-surface-border);
+  }
 }
 
 .field-group {

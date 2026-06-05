@@ -1,9 +1,8 @@
 <script setup>
-import { onMounted, onBeforeUnmount } from 'vue';
+import { onMounted, computed } from 'vue';
 import { ref } from 'vue';
 import { useSchedulerStore } from '@/stores/scheduler.store.js';
 import { useToast } from '@/composables/useToastComposable.js';
-import { activeScheduleCount } from '@/composables/useScreenshotScheduler.js';
 import ScheduleList from '@/components/scheduler/ScheduleList.vue';
 import ScheduleFormDrawer from '@/components/scheduler/ScheduleFormDrawer.vue';
 import SendLogPanel from '@/components/scheduler/SendLogPanel.vue';
@@ -13,6 +12,10 @@ const { success, error: toastError } = useToast();
 
 const drawerOpen = ref(false);
 const editingSchedule = ref(null);
+
+const activeScheduleCount = computed(
+  () => store.schedules.filter((s) => s.isRunning).length,
+);
 
 const openCreate = () => {
   editingSchedule.value = null;
@@ -51,18 +54,9 @@ const handleToggle = async (schedule) => {
   if (!res.ok) toastError(res.message || 'Toggle failed');
 };
 
-const onScreenshotSent = () => {
-  store.loadSendLogs();
-};
-
 onMounted(() => {
   store.loadSchedules();
   store.loadSendLogs();
-  window.addEventListener('reportflow:screenshot-sent', onScreenshotSent);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener('reportflow:screenshot-sent', onScreenshotSent);
 });
 </script>
 
@@ -72,8 +66,7 @@ onBeforeUnmount(() => {
       Auto-send active — {{ activeScheduleCount }} schedule{{
         activeScheduleCount === 1 ? '' : 's'
       }}
-      — backend cron fires over Socket.IO; this tab captures and sends via
-      <code>POST /screenshots/dispatch</code>
+      — backend generates reports and sends to WhatsApp automatically
     </div>
 
     <ScheduleList

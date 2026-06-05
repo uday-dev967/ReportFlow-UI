@@ -36,17 +36,35 @@ export const deleteSchedule = (id) =>
 export const activateSchedule = (id) => handle(automationAxios.post(r.activateSchedule(id)));
 export const deactivateSchedule = (id) => handle(automationAxios.post(r.deactivateSchedule(id)));
 
+// Dashboard
+export const fetchDashboardSummary = (filters = {}) => {
+  const params = {};
+  if (filters.states?.length) params.states = filters.states.join(',');
+  if (filters.regions?.length) params.regions = filters.regions.join(',');
+  if (filters.managers?.length) params.managers = filters.managers.join(',');
+  if (filters.reportType) params.reportType = filters.reportType;
+  if (filters.dateRange) params.dateRange = filters.dateRange;
+  if (filters.startDate) params.startDate = filters.startDate;
+  if (filters.endDate) params.endDate = filters.endDate;
+  return handle(automationAxios.get(r.dashboardSummary, { params }));
+};
+
+export const fetchDashboardTrend = (filters = {}) => {
+  const params = {};
+  if (filters.dateRange) params.dateRange = filters.dateRange;
+  if (filters.startDate) params.startDate = filters.startDate;
+  if (filters.endDate) params.endDate = filters.endDate;
+  return handle(automationAxios.get(r.dashboardTrend, { params }));
+};
+
+export const fetchDashboardFilters = () => handle(automationAxios.get(r.dashboardFilters));
+
 /**
- * POST /screenshots/dispatch as JSON (reliable with express body-parser; avoids multer/axios FormData issues).
+ * POST /reports/send — backend generates report image and sends to WhatsApp.
  */
 export const dispatchScreenshot = (data) => {
-  if (!data?.imageBase64) {
-    return Promise.resolve({ ok: false, message: 'Screenshot data missing (imageBase64)' });
-  }
-
   const body = {
-    imageBase64: data.imageBase64,
-    mimeType: data.mimeType || 'image/jpeg',
+    filters: data.filters || {},
     caption: data.caption,
     scheduleId: data.scheduleId ? String(data.scheduleId) : undefined,
     groupId: data.groupId ? String(data.groupId) : undefined,
@@ -54,7 +72,7 @@ export const dispatchScreenshot = (data) => {
   };
 
   return handle(
-    automationAxios.post(r.screenshotDispatch, body, {
+    automationAxios.post(r.reportsSend, body, {
       timeout: DISPATCH_TIMEOUT_MS,
     }),
   );
@@ -96,4 +114,4 @@ export const removeGroupMembers = (chatId, participantIds) =>
       participantIds,
     }),
   );
-
+

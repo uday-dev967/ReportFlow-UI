@@ -1,6 +1,5 @@
 <script setup>
 import { ref, reactive, watch, computed, onMounted } from 'vue';
-import { ALL_STATES, STATE_REGION_MAP, MANAGERS, REPORT_TYPES } from '@/data/mockData.js';
 import {
   fetchAvailableGroups,
   fetchContacts,
@@ -8,6 +7,7 @@ import {
   fetchGroupMembers,
   addGroupMembers,
   removeGroupMembers,
+  fetchDashboardFilters,
 } from '@/network/automation.service.js';
 import { useToast } from '@/composables/useToastComposable.js';
 
@@ -73,13 +73,22 @@ const addableContacts = computed(() =>
   contacts.value.filter((c) => !memberIdSet.value.has(c.id)),
 );
 
+const filterOptions = ref({
+  states: [],
+  managers: [],
+  reportTypes: ['Productivity Report'],
+  stateRegionMap: {},
+});
+
 const filteredWaGroups = computed(() => {
   const q = groupSearch.value.trim().toLowerCase();
   if (!q) return waGroups.value;
   return waGroups.value.filter((g) => (g.name || '').toLowerCase().includes(q));
 });
 
-const autoRegion = computed(() => (form.state ? STATE_REGION_MAP[form.state] || '' : ''));
+const autoRegion = computed(() =>
+  form.state ? filterOptions.value.stateRegionMap[form.state] || '' : '',
+);
 watch(autoRegion, (r) => {
   form.region = r;
 });
@@ -353,7 +362,17 @@ const handleSave = () => {
   emit('save', { ...form, chatId: form.chatId.trim(), name: form.name.trim() });
 };
 
-onMounted(() => {
+onMounted(async () => {
+  const filtersRes = await fetchDashboardFilters();
+  if (filtersRes.ok) {
+    filterOptions.value = {
+      states: filtersRes.data.states || [],
+      managers: filtersRes.data.managers || [],
+      reportTypes: filtersRes.data.reportTypes || ['Productivity Report'],
+      stateRegionMap: filtersRes.data.stateRegionMap || {},
+    };
+  }
+
   if (!isEdit.value) {
     loadWaGroups();
     loadContacts('');
@@ -606,7 +625,7 @@ onMounted(() => {
               <label class="field-label">State <span class="required">*</span></label>
               <select v-model="form.state" class="field-input">
                 <option value="">Select state</option>
-                <option v-for="s in ALL_STATES" :key="s" :value="s">{{ s }}</option>
+                <option v-for="s in filterOptions.states" :key="s" :value="s">{{ s }}</option>
               </select>
               <span v-if="errors.state" class="field-error">{{ errors.state }}</span>
             </div>
@@ -621,7 +640,7 @@ onMounted(() => {
             <label class="field-label">Assigned Manager</label>
             <select v-model="form.manager" class="field-input">
               <option value="">Select manager</option>
-              <option v-for="m in MANAGERS" :key="m" :value="m">{{ m }}</option>
+              <option v-for="m in filterOptions.managers" :key="m" :value="m">{{ m }}</option>
             </select>
           </div>
 
@@ -629,7 +648,7 @@ onMounted(() => {
             <label class="field-label">Report Types <span class="required">*</span></label>
             <div class="checkbox-group">
               <label
-                v-for="rt in REPORT_TYPES"
+                v-for="rt in filterOptions.reportTypes"
                 :key="rt"
                 class="checkbox-option"
                 :class="{ checked: form.reportTypes.includes(rt) }"

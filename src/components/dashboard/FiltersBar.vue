@@ -1,6 +1,18 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
-import { ALL_STATES, ALL_REGIONS, MANAGERS, REPORT_TYPES } from '@/data/mockData.js';
+
+const props = defineProps({
+  filterOptions: {
+    type: Object,
+    default: () => ({
+      states: [],
+      regions: [],
+      managers: [],
+      reportTypes: ['Productivity Report'],
+      dateRanges: [],
+    }),
+  },
+});
 
 const emit = defineEmits(['apply', 'reset']);
 
@@ -16,7 +28,8 @@ const dateTo = ref(defaultDateTo());
 const selectedStates = ref([]);
 const selectedRegion = ref('');
 const selectedManager = ref('');
-const selectedReportType = ref(REPORT_TYPES[0]);
+const selectedReportType = ref('Productivity Report');
+const selectedDateRange = ref('last30days');
 const stateDropdownOpen = ref(false);
 
 const closeDropdownOnOutsideClick = (e) => {
@@ -47,6 +60,7 @@ const handleApply = () => {
     region: selectedRegion.value,
     manager: selectedManager.value,
     reportType: selectedReportType.value,
+    dateRange: selectedDateRange.value,
   });
 };
 
@@ -56,7 +70,8 @@ const handleReset = () => {
   selectedStates.value = [];
   selectedRegion.value = '';
   selectedManager.value = '';
-  selectedReportType.value = REPORT_TYPES[0];
+  selectedReportType.value = props.filterOptions.reportTypes?.[0] || 'Productivity Report';
+  selectedDateRange.value = 'last30days';
   stateDropdownOpen.value = false;
   emit('reset');
 };
@@ -73,6 +88,20 @@ const handleReset = () => {
       <div class="filter-group">
         <label class="filter-label">Date To</label>
         <input type="date" v-model="dateTo" class="filter-input" />
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Date Range</label>
+        <select v-model="selectedDateRange" class="filter-select">
+          <option
+            v-for="dr in filterOptions.dateRanges"
+            :key="dr.value"
+            :value="dr.value"
+          >
+            {{ dr.label }}
+          </option>
+          <option v-if="!filterOptions.dateRanges?.length" value="today">Today</option>
+        </select>
       </div>
 
       <div class="filter-group state-filter">
@@ -101,7 +130,7 @@ const handleReset = () => {
           </button>
           <div v-if="stateDropdownOpen" class="state-dropdown">
             <label
-              v-for="s in ALL_STATES"
+              v-for="s in filterOptions.states"
               :key="s"
               class="state-option"
               :class="{ checked: selectedStates.includes(s) }"
@@ -122,7 +151,7 @@ const handleReset = () => {
         <label class="filter-label">Region</label>
         <select v-model="selectedRegion" class="filter-select">
           <option value="">All Regions</option>
-          <option v-for="r in ALL_REGIONS" :key="r" :value="r">{{ r }}</option>
+          <option v-for="r in filterOptions.regions" :key="r" :value="r">{{ r }}</option>
         </select>
       </div>
 
@@ -130,14 +159,14 @@ const handleReset = () => {
         <label class="filter-label">Manager</label>
         <select v-model="selectedManager" class="filter-select">
           <option value="">All Managers</option>
-          <option v-for="m in MANAGERS" :key="m" :value="m">{{ m }}</option>
+          <option v-for="m in filterOptions.managers" :key="m" :value="m">{{ m }}</option>
         </select>
       </div>
 
       <div class="filter-group">
         <label class="filter-label">Report Type</label>
         <select v-model="selectedReportType" class="filter-select">
-          <option v-for="t in REPORT_TYPES" :key="t" :value="t">{{ t }}</option>
+          <option v-for="t in filterOptions.reportTypes" :key="t" :value="t">{{ t }}</option>
         </select>
       </div>
 

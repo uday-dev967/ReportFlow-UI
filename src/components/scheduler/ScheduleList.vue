@@ -53,6 +53,32 @@ const scheduleDays = (s) => {
   return '—';
 };
 
+const DATE_RANGE_LABELS = {
+  today: 'Today',
+  last7days: 'Last 7 Days',
+  last30days: 'Last 30 Days',
+  thisMonth: 'This Month',
+};
+
+const filterSummary = (s) => {
+  const f = s.filters || {};
+  const parts = [];
+
+  if (f.startDate || f.endDate) {
+    parts.push(`${f.startDate || '…'} → ${f.endDate || '…'}`);
+  } else {
+    parts.push(DATE_RANGE_LABELS[f.dateRange] || f.dateRange || 'Last 30 Days');
+  }
+
+  if (f.states?.length) parts.push(`${f.states.length} state(s)`);
+  else if (f.regions?.length) parts.push(f.regions.join(', '));
+  else parts.push('All regions');
+
+  if (f.managers?.length) parts.push(`${f.managers.length} manager(s)`);
+
+  return parts.join(' · ');
+};
+
 const confirmDelete = (id) => {
   pendingDeleteId.value = id;
 };
@@ -91,6 +117,7 @@ const doDelete = () => {
               <th>Frequency</th>
               <th>Time</th>
               <th>Days Active</th>
+              <th>Report Filters</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
@@ -114,6 +141,7 @@ const doDelete = () => {
               <td>{{ scheduleFrequency(s) }}</td>
               <td class="cell-mono">{{ scheduleTime(s) }}</td>
               <td class="cell-days">{{ scheduleDays(s) }}</td>
+              <td class="cell-filters" :title="filterSummary(s)">{{ filterSummary(s) }}</td>
               <td>
                 <button
                   type="button"
@@ -261,6 +289,14 @@ const doDelete = () => {
     &.cell-name { font-weight: 500; }
     &.cell-mono { font-variant-numeric: tabular-nums; }
     &.cell-days { color: var(--rf-text-secondary); font-size: 0.75rem; }
+    &.cell-filters {
+      color: var(--rf-text-secondary);
+      font-size: 0.75rem;
+      max-width: 12rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     &.cell-actions { display: flex; gap: 0.375rem; align-items: center; }
   }
 }

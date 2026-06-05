@@ -22,8 +22,13 @@ export const automationRoutes = {
   deactivateSchedule: (id) => `${BASE}/screenshot-dispatch-schedules/${id}/deactivate`,
   scheduleDispatchNow: (id) => `${BASE}/screenshot-dispatch-schedules/${id}/dispatch-now`,
 
-  // Screenshot dispatch
-  screenshotDispatch: `${BASE}/screenshots/dispatch`,
+  // Dashboard
+  dashboardSummary: `${BASE}/dashboard/summary`,
+  dashboardTrend: `${BASE}/dashboard/trend`,
+  dashboardFilters: `${BASE}/dashboard/filters`,
+
+  // Report dispatch
+  reportsSend: `${BASE}/reports/send`,
 
   // Send logs
   sendLogs: `${BASE}/send-logs`,
