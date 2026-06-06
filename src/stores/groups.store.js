@@ -32,10 +32,6 @@ export const useGroupsStore = defineStore('groups', () => {
       name: formData.name,
       chatId: formData.chatId,
       isActive: formData.isActive !== false,
-      state: formData.state || '',
-      region: formData.region || '',
-      manager: formData.manager || '',
-      reportTypes: formData.reportTypes?.length ? formData.reportTypes : ['Productivity Report'],
     };
     const res = editId
       ? await updateGroup(editId, payload)

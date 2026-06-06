@@ -7,12 +7,10 @@ import {
   fetchGroupMembers,
   addGroupMembers,
   removeGroupMembers,
-  fetchDashboardFilters,
 } from '@/network/automation.service.js';
 import { useToast } from '@/composables/useToastComposable.js';
 import BasicPopup from '@/components/sharedComponents/BasicPopup.vue';
 import OInput from '@/components/sharedComponents/OInput.vue';
-import ODropdown from '@/components/sharedComponents/ODropdown.vue';
 
 const { success, error: toastError } = useToast();
 
@@ -31,10 +29,6 @@ const errors = reactive({});
 const form = reactive({
   name: '',
   chatId: '',
-  state: '',
-  region: '',
-  manager: '',
-  reportTypes: ['Productivity Report'],
   isActive: true,
 });
 
@@ -69,24 +63,10 @@ const addableContacts = computed(() =>
   contacts.value.filter((c) => !memberIdSet.value.has(c.id)),
 );
 
-const filterOptions = ref({
-  states: [],
-  managers: [],
-  reportTypes: ['Productivity Report'],
-  stateRegionMap: {},
-});
-
 const filteredWaGroups = computed(() => {
   const q = groupSearch.value.trim().toLowerCase();
   if (!q) return waGroups.value;
   return waGroups.value.filter((g) => (g.name || '').toLowerCase().includes(q));
-});
-
-const autoRegion = computed(() =>
-  form.state ? filterOptions.value.stateRegionMap[form.state] || '' : '',
-);
-watch(autoRegion, (r) => {
-  form.region = r;
 });
 
 const selectedGroupSummary = computed(() => {
@@ -98,10 +78,6 @@ const populate = (g) => {
   if (!g) {
     form.name = '';
     form.chatId = '';
-    form.state = '';
-    form.region = '';
-    form.manager = '';
-    form.reportTypes = ['Productivity Report'];
     form.isActive = true;
     step.value = 1;
     step1Tab.value = 'existing';
@@ -109,10 +85,6 @@ const populate = (g) => {
   }
   form.name = g.name || '';
   form.chatId = g.chatId || '';
-  form.state = g.state || '';
-  form.region = g.region || '';
-  form.manager = g.manager || '';
-  form.reportTypes = g.reportTypes?.length ? [...g.reportTypes] : ['Productivity Report'];
   form.isActive = g.isActive !== false;
   step.value = 2;
 };
@@ -321,12 +293,6 @@ const goBack = () => {
   step.value = 1;
 };
 
-const toggleReportType = (rt) => {
-  const idx = form.reportTypes.indexOf(rt);
-  if (idx === -1) form.reportTypes.push(rt);
-  else if (form.reportTypes.length > 1) form.reportTypes.splice(idx, 1);
-};
-
 const validate = () => {
   Object.keys(errors).forEach((k) => delete errors[k]);
   if (!form.name.trim()) errors.name = 'Group name is required';
@@ -337,8 +303,6 @@ const validate = () => {
     );
     if (dup) errors.chatId = 'This group is already registered';
   }
-  if (!form.state) errors.state = 'State is required';
-  if (!form.reportTypes.length) errors.reportTypes = 'Select at least one report type';
   return !Object.keys(errors).length;
 };
 
@@ -355,26 +319,11 @@ const modalTitle = computed(() => {
 
 const modalSubtitle = computed(() => {
   if (isEdit.value) return 'Update group settings and manage members';
-  if (step.value === 2) return 'Step 2 of 2 — Configure report delivery settings';
+  if (step.value === 2) return 'Step 2 of 2 — Confirm registration and set status';
   return 'Step 1 of 2 — Choose or create a WhatsApp group';
 });
 
-const managerItems = computed(() => [
-  { text: 'None', value: '' },
-  ...filterOptions.value.managers.map((m) => ({ text: m, value: m })),
-]);
-
 onMounted(async () => {
-  const filtersRes = await fetchDashboardFilters();
-  if (filtersRes.ok) {
-    filterOptions.value = {
-      states: filtersRes.data.states || [],
-      managers: filtersRes.data.managers || [],
-      reportTypes: filtersRes.data.reportTypes || ['Productivity Report'],
-      stateRegionMap: filtersRes.data.stateRegionMap || {},
-    };
-  }
-
   if (!isEdit.value) {
     loadWaGroups();
     loadContacts('');
@@ -669,58 +618,6 @@ onMounted(async () => {
           </div>
 
           <div class="config-grid">
-            <div class="field-group" :class="{ error: errors.state }">
-              <label class="field-label">State <span class="required">*</span></label>
-              <div class="field-control">
-                <ODropdown
-                  :items="filterOptions.states"
-                  :model-value="form.state"
-                  button-text="Select state"
-                  @update:model-value="form.state = $event || ''"
-                />
-              </div>
-              <span v-if="errors.state" class="field-error">{{ errors.state }}</span>
-            </div>
-
-            <div class="field-group">
-              <label class="field-label">Region <span class="auto-tag">auto</span></label>
-              <input :value="autoRegion || '—'" type="text" class="rf-input" disabled />
-            </div>
-
-            <div class="field-group full-width">
-              <label class="field-label">Assigned Manager</label>
-              <div class="field-control">
-                <ODropdown
-                  :items="managerItems"
-                  :model-value="form.manager"
-                  item-text="text"
-                  item-value="value"
-                  button-text="Select manager"
-                  @update:model-value="form.manager = $event || ''"
-                />
-              </div>
-            </div>
-
-            <div class="field-group full-width" :class="{ error: errors.reportTypes }">
-              <label class="field-label">Report Types <span class="required">*</span></label>
-              <div class="chip-options">
-                <label
-                  v-for="rt in filterOptions.reportTypes"
-                  :key="rt"
-                  class="chip-option"
-                  :class="{ checked: form.reportTypes.includes(rt) }"
-                >
-                  <input
-                    type="checkbox"
-                    :checked="form.reportTypes.includes(rt)"
-                    @change="toggleReportType(rt)"
-                  />
-                  {{ rt }}
-                </label>
-              </div>
-              <span v-if="errors.reportTypes" class="field-error">{{ errors.reportTypes }}</span>
-            </div>
-
             <div class="field-group full-width">
               <label class="field-label">Status</label>
               <div class="status-toggle">

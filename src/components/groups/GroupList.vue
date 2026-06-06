@@ -52,10 +52,6 @@ const fmtDate = (iso) => {
               <tr>
                 <th>Group Name</th>
                 <th>WhatsApp Group ID</th>
-                <th>State</th>
-                <th>Region</th>
-                <th>Manager</th>
-                <th>Report Types</th>
                 <th>Status</th>
                 <th>Registered</th>
                 <th>Actions</th>
@@ -65,22 +61,6 @@ const fmtDate = (iso) => {
               <tr v-for="g in groups" :key="g._id">
                 <td class="cell-name">{{ g.name }}</td>
                 <td class="cell-id">{{ g.chatId }}</td>
-                <td>{{ g.state || '—' }}</td>
-                <td>
-                  <span v-if="g.region" class="region-tag" :class="g.region.toLowerCase()">
-                    {{ g.region }}
-                  </span>
-                  <span v-else>—</span>
-                </td>
-                <td>{{ g.manager || '—' }}</td>
-                <td>
-                  <span
-                    v-for="rt in g.reportTypes || []"
-                    :key="rt"
-                    class="report-tag"
-                  >{{ rt }}</span>
-                  <span v-if="!g.reportTypes?.length">—</span>
-                </td>
                 <td>
                   <button
                     type="button"
@@ -224,29 +204,6 @@ const fmtDate = (iso) => {
     &.cell-muted { color: var(--rf-text-muted); font-size: 0.75rem; }
     &.cell-actions { display: flex; gap: 0.375rem; }
   }
-}
-
-.region-tag {
-  display: inline-block;
-  padding: 0.125rem 0.5rem;
-  border-radius: 9999px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-
-  &.north { background: #dbeafe; color: #1d4ed8; }
-  &.south { background: #fde68a; color: #92400e; }
-  &.east { background: #ede9fe; color: #6d28d9; }
-  &.west { background: #d1fae5; color: #065f46; }
-}
-
-.report-tag {
-  display: inline-block;
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  background: var(--rf-info-light, #eff6ff);
-  color: var(--rf-info, #3b82f6);
 }
 
 .toggle-switch {
