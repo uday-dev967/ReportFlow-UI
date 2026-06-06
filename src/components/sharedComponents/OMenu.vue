@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import { remToPixels } from '../composables/useRemToPixel.js';
+import { remToPixels } from '@/composables/useRemToPixel.js';
 
 // Props
 const props = defineProps({

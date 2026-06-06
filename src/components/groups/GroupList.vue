@@ -150,10 +150,11 @@ const fmtDate = (iso) => {
 }
 
 .section-title {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.0625rem;
+  font-weight: 700;
   color: var(--rf-text-primary, #1e293b);
   margin: 0;
+  letter-spacing: -0.01em;
 }
 
 .btn-register {

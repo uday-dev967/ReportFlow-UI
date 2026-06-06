@@ -4,33 +4,46 @@ import { useRoute } from 'vue-router';
 
 const route = useRoute();
 
-const pageTitle = computed(() => {
-  const titles = {
-    dashboard: 'Dashboard',
-    scheduler: 'Scheduler',
-    groups: 'Group Registration',
+const pageMeta = computed(() => {
+  const meta = {
+    dashboard: {
+      title: 'Dashboard',
+      subtitle: 'Sales performance overview and report delivery',
+    },
+    scheduler: {
+      title: 'Scheduler',
+      subtitle: 'Automate report generation and WhatsApp delivery',
+    },
+    groups: {
+      title: 'Group Registration',
+      subtitle: 'Manage WhatsApp groups for automated reports',
+    },
   };
-  return titles[route.name] || 'ReportFlow';
+  return meta[route.name] || { title: 'ReportFlow', subtitle: '' };
 });
 </script>
 
 <template>
   <header class="app-header">
     <div class="header-left">
-      <h1 class="page-title">{{ pageTitle }}</h1>
+      <h1 class="page-title">{{ pageMeta.title }}</h1>
+      <p v-if="pageMeta.subtitle" class="page-subtitle">{{ pageMeta.subtitle }}</p>
     </div>
 
-    <div class="header-right">
-      <div class="user-avatar" title="User">
-        <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="10" cy="7" r="3.5" stroke="currentColor" stroke-width="1.5" />
-          <path
-            d="M3 17c0-3.866 3.134-7 7-7s7 3.134 7 7"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-          />
-        </svg>
+    <div v-if="false" class="header-right">
+      <div class="user-chip">
+        <div class="user-avatar" title="User">
+          <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="10" cy="7" r="3.5" stroke="currentColor" stroke-width="1.5" />
+            <path
+              d="M3 17c0-3.866 3.134-7 7-7s7 3.134 7 7"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
+        </div>
+        <span class="user-label">Admin</span>
       </div>
       <button class="logout-btn" type="button">
         <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -67,11 +80,25 @@ const pageTitle = computed(() => {
   z-index: 10;
 }
 
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.0625rem;
+}
+
 .page-title {
   font-size: 1.0625rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--rf-text-primary, #1e293b);
   margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.page-subtitle {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--rf-text-muted);
+  font-weight: 400;
 }
 
 .header-right {
@@ -80,11 +107,21 @@ const pageTitle = computed(() => {
   gap: 0.75rem;
 }
 
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.625rem 0.25rem 0.25rem;
+  border-radius: 9999px;
+  background: var(--rf-page-bg);
+  border: 1px solid var(--rf-surface-border);
+}
+
 .user-avatar {
-  width: 2rem;
-  height: 2rem;
+  width: 1.75rem;
+  height: 1.75rem;
   border-radius: 50%;
-  background-color: var(--rf-page-bg, #f1f5f9);
+  background-color: #fff;
   border: 1px solid var(--rf-surface-border, #e2e8f0);
   color: var(--rf-text-secondary, #64748b);
   display: flex;
@@ -93,18 +130,24 @@ const pageTitle = computed(() => {
   flex-shrink: 0;
 
   svg {
-    width: 1.125rem;
-    height: 1.125rem;
+    width: 1rem;
+    height: 1rem;
   }
+}
+
+.user-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--rf-text-secondary);
 }
 
 .logout-btn {
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.375rem 0.75rem;
+  padding: 0.4375rem 0.75rem;
   border: 1px solid var(--rf-surface-border, #e2e8f0);
-  border-radius: 0.375rem;
+  border-radius: 0.5rem;
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--rf-text-secondary, #64748b);
@@ -120,6 +163,7 @@ const pageTitle = computed(() => {
   &:hover {
     border-color: var(--rf-error, #ef4444);
     color: var(--rf-error, #ef4444);
+    background: var(--rf-error-light);
   }
 }
 </style>

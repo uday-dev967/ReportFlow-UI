@@ -2,6 +2,8 @@
 import { ref, reactive, watch, onMounted, computed } from 'vue';
 import { buildCron, parseCron, DAY_LABELS, PRESET_CRONS } from '@/utils/cronUtils.js';
 import { fetchGroups, fetchDashboardFilters } from '@/network/automation.service.js';
+import BasicPopup from '@/components/sharedComponents/BasicPopup.vue';
+import ODropdown from '@/components/sharedComponents/ODropdown.vue';
 
 const props = defineProps({
   schedule: { type: Object, default: null },
@@ -39,67 +41,14 @@ const form = reactive({
   filterDateTo: '',
 });
 
-const groupDropdownOpen = ref(false);
-const stateDropdownOpen = ref(false);
-const regionDropdownOpen = ref(false);
-const managerDropdownOpen = ref(false);
+const groupItems = computed(() =>
+  groups.value.map((g) => ({ text: g.name, value: g._id })),
+);
 
-const selectedGroupLabels = computed(() => {
-  if (!form.groupIds.length) return 'Select groups';
-  if (form.groupIds.length === 1) {
-    const g = groups.value.find((g) => g._id === form.groupIds[0]);
-    return g?.name || '1 group selected';
-  }
-  return `${form.groupIds.length} groups selected`;
+const dateRangeItems = computed(() => {
+  if (filterOptions.value.dateRanges?.length) return filterOptions.value.dateRanges;
+  return [{ label: 'Last 30 Days', value: 'last30days' }];
 });
-
-const stateFilterLabel = computed(() => {
-  if (!form.filterStates.length) return 'All States';
-  if (form.filterStates.length === 1) return form.filterStates[0];
-  return `${form.filterStates.length} states selected`;
-});
-
-const regionFilterLabel = computed(() => {
-  if (!form.filterRegions.length) return 'All Regions';
-  if (form.filterRegions.length === 1) return form.filterRegions[0];
-  return `${form.filterRegions.length} regions selected`;
-});
-
-const managerFilterLabel = computed(() => {
-  if (!form.filterManagers.length) return 'All Managers';
-  if (form.filterManagers.length === 1) return form.filterManagers[0];
-  return `${form.filterManagers.length} managers selected`;
-});
-
-const toggleGroup = (id) => {
-  const idx = form.groupIds.indexOf(id);
-  if (idx === -1) form.groupIds.push(id);
-  else form.groupIds.splice(idx, 1);
-};
-
-const toggleDay = (d) => {
-  const idx = form.days.indexOf(d);
-  if (idx === -1) form.days.push(d);
-  else form.days.splice(idx, 1);
-};
-
-const toggleFilterState = (state) => {
-  const idx = form.filterStates.indexOf(state);
-  if (idx === -1) form.filterStates.push(state);
-  else form.filterStates.splice(idx, 1);
-};
-
-const toggleFilterRegion = (region) => {
-  const idx = form.filterRegions.indexOf(region);
-  if (idx === -1) form.filterRegions.push(region);
-  else form.filterRegions.splice(idx, 1);
-};
-
-const toggleFilterManager = (manager) => {
-  const idx = form.filterManagers.indexOf(manager);
-  if (idx === -1) form.filterManagers.push(manager);
-  else form.filterManagers.splice(idx, 1);
-};
 
 const populate = (s) => {
   if (!s) {
@@ -163,6 +112,12 @@ onMounted(async () => {
   }
 });
 
+const toggleDay = (d) => {
+  const idx = form.days.indexOf(d);
+  if (idx === -1) form.days.push(d);
+  else form.days.splice(idx, 1);
+};
+
 const validate = () => {
   Object.keys(errors).forEach((k) => delete errors[k]);
   if (!form.name.trim()) errors.name = 'Schedule name is required';
@@ -203,324 +158,302 @@ const handleSave = () => {
 </script>
 
 <template>
-  <div class="drawer-overlay" @click.self="emit('cancel')">
-    <div class="drawer">
-      <div class="drawer-header">
-        <h2>{{ schedule ? 'Edit Schedule' : 'Create Schedule' }}</h2>
-        <button type="button" class="close-btn" @click="emit('cancel')">
+  <BasicPopup max-width="52rem"  @popup-outside-click="emit('cancel')">
+    <div class="schedule-modal">
+      <div class="modal-header">
+        <div class="header-text">
+          <h2>{{ schedule ? 'Edit Schedule' : 'Create Schedule' }}</h2>
+          <p>Configure report delivery, filters, and timing</p>
+        </div>
+        <button type="button" class="close-btn" aria-label="Close" @click="emit('cancel')">
           <svg viewBox="0 0 16 16" fill="none">
             <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
           </svg>
         </button>
       </div>
 
-      <div class="drawer-body">
-        <div class="field-group" :class="{ error: errors.name }">
-          <label class="field-label">Schedule Name <span class="required">*</span></label>
-          <input
-            v-model="form.name"
-            type="text"
-            class="field-input"
-            placeholder="e.g. Daily North Region Report"
-          />
-          <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
-        </div>
-
-        <div class="field-group">
-          <label class="field-label">Report</label>
-          <select v-model="form.reportType" class="field-input">
-            <option v-for="t in filterOptions.reportTypes" :key="t" :value="t">{{ t }}</option>
-          </select>
-        </div>
-
-        <div class="field-group" :class="{ error: errors.groupIds }">
-          <label class="field-label">Target Groups <span class="required">*</span></label>
-          <div class="dropdown-wrapper">
-            <button
-              type="button"
-              class="field-input dropdown-trigger"
-              @click="groupDropdownOpen = !groupDropdownOpen"
-            >
-              <span class="trigger-text">{{ selectedGroupLabels }}</span>
-              <svg viewBox="0 0 16 16" fill="none" class="chevron" :class="{ rotated: groupDropdownOpen }">
-                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+      <div class="modal-body">
+        <section class="form-section">
+          <h3 class="section-title">
+            <span class="section-icon">
+              <svg viewBox="0 0 20 20" fill="none">
+                <rect x="3" y="4" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.5" />
+                <path d="M7 8h6M7 11h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
               </svg>
-            </button>
-            <div v-if="groupDropdownOpen" class="group-dropdown">
-              <div v-if="groupsLoading" class="dropdown-loading">Loading groups…</div>
-              <div v-else-if="!groups.length" class="dropdown-empty">No registered groups found</div>
-              <label
-                v-for="g in groups"
-                :key="g._id"
-                class="group-option"
-                :class="{ checked: form.groupIds.includes(g._id) }"
-              >
-                <input
-                  type="checkbox"
-                  :checked="form.groupIds.includes(g._id)"
-                  @change="toggleGroup(g._id)"
-                />
-                <span class="option-name">{{ g.name }}</span>
-              </label>
+            </span>
+            Basic Details
+          </h3>
+          <div class="section-content">
+            <div class="field-group" :class="{ error: errors.name }">
+              <label class="field-label">Schedule Name <span class="required">*</span></label>
+              <input
+                v-model="form.name"
+                type="text"
+                class="rf-input"
+                placeholder="e.g. Daily North Region Report"
+              />
+              <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
+            </div>
+
+            <div class="fields-row">
+              <div class="field-group">
+                <label class="field-label">Report Type</label>
+                <div class="field-control">
+                  <ODropdown
+                    :items="filterOptions.reportTypes"
+                    :model-value="form.reportType"
+                    button-text="Select report type"
+                    button-width="100%"
+                    @update:model-value="form.reportType = $event"
+                  />
+                </div>
+              </div>
+
+              <div class="field-group" :class="{ error: errors.groupIds }">
+                <label class="field-label">Target Groups <span class="required">*</span></label>
+                <div v-if="!groupsLoading && groups.length" class="field-control">
+                  <ODropdown
+                    :items="groupItems"
+                    :model-value="form.groupIds"
+                    item-text="text"
+                    item-value="value"
+                    multiple
+                    button-text="Select groups"
+                    button-width="100%"
+                    no-data-text="No groups available"
+                    @update:model-value="form.groupIds = $event"
+                  />
+                </div>
+                <div v-else-if="groupsLoading" class="field-hint">Loading groups…</div>
+                <div v-else class="field-hint">No registered groups found</div>
+                <span v-if="errors.groupIds" class="field-error">{{ errors.groupIds }}</span>
+              </div>
             </div>
           </div>
-          <span v-if="errors.groupIds" class="field-error">{{ errors.groupIds }}</span>
-        </div>
+        </section>
 
-        <div class="section-divider">
-          <span>Report Filters</span>
-        </div>
-
-        <div class="field-group">
-          <label class="field-label">Date Range Preset</label>
-          <select v-model="form.filterDateRange" class="field-input">
-            <option
-              v-for="dr in filterOptions.dateRanges"
-              :key="dr.value"
-              :value="dr.value"
-            >
-              {{ dr.label }}
-            </option>
-            <option v-if="!filterOptions.dateRanges?.length" value="last30days">Last 30 Days</option>
-          </select>
-          <span class="field-hint">Used when custom dates below are not set</span>
-        </div>
-
-        <div class="fields-row">
-          <div class="field-group">
-            <label class="field-label">Date From</label>
-            <input v-model="form.filterDateFrom" type="date" class="field-input" />
-          </div>
-          <div class="field-group">
-            <label class="field-label">Date To</label>
-            <input v-model="form.filterDateTo" type="date" class="field-input" />
-          </div>
-        </div>
-
-        <div class="field-group">
-          <label class="field-label">States</label>
-          <div class="dropdown-wrapper">
-            <button
-              type="button"
-              class="field-input dropdown-trigger"
-              @click="stateDropdownOpen = !stateDropdownOpen"
-            >
-              <span class="trigger-text">{{ stateFilterLabel }}</span>
-              <svg viewBox="0 0 16 16" fill="none" class="chevron" :class="{ rotated: stateDropdownOpen }">
-                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+        <section class="form-section">
+          <h3 class="section-title">
+            <span class="section-icon">
+              <svg viewBox="0 0 20 20" fill="none">
+                <path d="M4 6h12M4 10h8M4 14h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
               </svg>
-            </button>
-            <div v-if="stateDropdownOpen" class="group-dropdown">
-              <label
-                v-for="s in filterOptions.states"
-                :key="s"
-                class="group-option"
-                :class="{ checked: form.filterStates.includes(s) }"
-              >
-                <input
-                  type="checkbox"
-                  :checked="form.filterStates.includes(s)"
-                  @change="toggleFilterState(s)"
+            </span>
+            Report Filters
+          </h3>
+          <div class="section-content">
+            <div class="field-group">
+              <label class="field-label">Date Range Preset</label>
+              <div class="field-control">
+                <ODropdown
+                  :items="dateRangeItems"
+                  :model-value="form.filterDateRange"
+                  item-text="label"
+                  item-value="value"
+                  button-text="Select date range"
+                  button-width="100%"
+                  @update:model-value="form.filterDateRange = $event"
                 />
-                <span class="option-name">{{ s }}</span>
-              </label>
+              </div>
+            </div>
+
+            <div class="fields-row">
+              <div class="field-group">
+                <label class="field-label">Date From</label>
+                <input v-model="form.filterDateFrom" type="date" class="rf-input" />
+              </div>
+              <div class="field-group">
+                <label class="field-label">Date To</label>
+                <input v-model="form.filterDateTo" type="date" class="rf-input" />
+              </div>
+            </div>
+
+            <div class="fields-row fields-row-3">
+              <div class="field-group">
+                <label class="field-label">States</label>
+                <div class="field-control">
+                  <ODropdown
+                    :items="filterOptions.states"
+                    :model-value="form.filterStates"
+                    multiple
+                    button-text="All States"
+                    button-width="100%"
+                    @update:model-value="form.filterStates = $event"
+                  />
+                </div>
+              </div>
+              <div class="field-group">
+                <label class="field-label">Regions</label>
+                <div class="field-control">
+                  <ODropdown
+                    :items="filterOptions.regions"
+                    :model-value="form.filterRegions"
+                    multiple
+                    button-text="All Regions"
+                    button-width="100%"
+                    @update:model-value="form.filterRegions = $event"
+                  />
+                </div>
+              </div>
+              <div class="field-group">
+                <label class="field-label">Managers</label>
+                <div class="field-control">
+                  <ODropdown
+                    :items="filterOptions.managers"
+                    :model-value="form.filterManagers"
+                    multiple
+                    button-text="All Managers"
+                    button-width="100%"
+                    @update:model-value="form.filterManagers = $event"
+                  />
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div class="field-group">
-          <label class="field-label">Regions</label>
-          <div class="dropdown-wrapper">
-            <button
-              type="button"
-              class="field-input dropdown-trigger"
-              @click="regionDropdownOpen = !regionDropdownOpen"
-            >
-              <span class="trigger-text">{{ regionFilterLabel }}</span>
-              <svg viewBox="0 0 16 16" fill="none" class="chevron" :class="{ rotated: regionDropdownOpen }">
-                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+        <section class="form-section">
+          <h3 class="section-title">
+            <span class="section-icon">
+              <svg viewBox="0 0 20 20" fill="none">
+                <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5" />
+                <path d="M10 6v4l2.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
               </svg>
-            </button>
-            <div v-if="regionDropdownOpen" class="group-dropdown">
-              <label
-                v-for="r in filterOptions.regions"
-                :key="r"
-                class="group-option"
-                :class="{ checked: form.filterRegions.includes(r) }"
-              >
-                <input
-                  type="checkbox"
-                  :checked="form.filterRegions.includes(r)"
-                  @change="toggleFilterRegion(r)"
+            </span>
+            Schedule Timing
+          </h3>
+          <div class="section-content">
+            <div class="field-group">
+              <label class="field-label">Frequency <span class="required">*</span></label>
+              <div class="freq-pills">
+                <button
+                  v-for="opt in [
+                    { value: 'preset', label: 'Preset' },
+                    { value: 'daily', label: 'Daily' },
+                    { value: 'weekly', label: 'Weekly' },
+                    { value: 'custom', label: 'Custom' },
+                  ]"
+                  :key="opt.value"
+                  type="button"
+                  class="freq-pill"
+                  :class="{ active: form.frequency === opt.value }"
+                  @click="form.frequency = opt.value"
+                >
+                  {{ opt.label }}
+                </button>
+              </div>
+            </div>
+
+            <div v-if="form.frequency === 'preset'" class="field-group" :class="{ error: errors.presetCron }">
+              <label class="field-label">Interval <span class="required">*</span></label>
+              <div class="field-control">
+                <ODropdown
+                  :items="PRESET_CRONS"
+                  :model-value="form.presetCron"
+                  item-text="label"
+                  item-value="value"
+                  button-text="Select interval"
+                  button-width="100%"
+                  @update:model-value="form.presetCron = $event"
                 />
-                <span class="option-name">{{ r }}</span>
-              </label>
+              </div>
+              <span v-if="errors.presetCron" class="field-error">{{ errors.presetCron }}</span>
+            </div>
+
+            <div
+              v-if="form.frequency === 'daily' || form.frequency === 'weekly'"
+              class="fields-row"
+            >
+              <div class="field-group" :class="{ error: errors.time }">
+                <label class="field-label">Time <span class="required">*</span></label>
+                <input v-model="form.time" type="time" class="rf-input rf-input-sm" />
+                <span v-if="errors.time" class="field-error">{{ errors.time }}</span>
+              </div>
+            </div>
+
+            <div v-if="form.frequency === 'weekly'" class="field-group" :class="{ error: errors.days }">
+              <label class="field-label">Days of Week <span class="required">*</span></label>
+              <div class="days-grid">
+                <button
+                  v-for="(label, idx) in DAY_LABELS"
+                  :key="idx"
+                  type="button"
+                  class="day-btn"
+                  :class="{ selected: form.days.includes(idx) }"
+                  @click="toggleDay(idx)"
+                >
+                  {{ label }}
+                </button>
+              </div>
+              <span v-if="errors.days" class="field-error">{{ errors.days }}</span>
+            </div>
+
+            <div v-if="form.frequency === 'custom'" class="field-group" :class="{ error: errors.customCron }">
+              <label class="field-label">Cron Expression <span class="required">*</span></label>
+              <input
+                v-model="form.customCron"
+                type="text"
+                class="rf-input"
+                placeholder="e.g. 0 9 * * 1-5"
+              />
+              <span class="field-hint">Format: Minute Hour DayOfMonth Month DayOfWeek</span>
+              <span v-if="errors.customCron" class="field-error">{{ errors.customCron }}</span>
+            </div>
+
+            <div class="fields-row">
+              <div class="field-group">
+                <label class="field-label">Active From</label>
+                <input v-model="form.activeFrom" type="date" class="rf-input" />
+              </div>
+              <div class="field-group">
+                <label class="field-label">Active Until <span class="optional">(optional)</span></label>
+                <input v-model="form.activeUntil" type="date" class="rf-input" />
+              </div>
             </div>
           </div>
-        </div>
-
-        <div class="field-group">
-          <label class="field-label">Managers</label>
-          <div class="dropdown-wrapper">
-            <button
-              type="button"
-              class="field-input dropdown-trigger"
-              @click="managerDropdownOpen = !managerDropdownOpen"
-            >
-              <span class="trigger-text">{{ managerFilterLabel }}</span>
-              <svg viewBox="0 0 16 16" fill="none" class="chevron" :class="{ rotated: managerDropdownOpen }">
-                <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-              </svg>
-            </button>
-            <div v-if="managerDropdownOpen" class="group-dropdown">
-              <label
-                v-for="m in filterOptions.managers"
-                :key="m"
-                class="group-option"
-                :class="{ checked: form.filterManagers.includes(m) }"
-              >
-                <input
-                  type="checkbox"
-                  :checked="form.filterManagers.includes(m)"
-                  @change="toggleFilterManager(m)"
-                />
-                <span class="option-name">{{ m }}</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="section-divider">
-          <span>Schedule Timing</span>
-        </div>
-
-        <div class="field-group">
-          <label class="field-label">Frequency <span class="required">*</span></label>
-          <div class="radio-group">
-            <label class="radio-option">
-              <input type="radio" v-model="form.frequency" value="preset" />
-              Preset Interval
-            </label>
-            <label class="radio-option">
-              <input type="radio" v-model="form.frequency" value="daily" />
-              Daily
-            </label>
-            <label class="radio-option">
-              <input type="radio" v-model="form.frequency" value="weekly" />
-              Weekly
-            </label>
-            <label class="radio-option">
-              <input type="radio" v-model="form.frequency" value="custom" />
-              Custom Cron
-            </label>
-          </div>
-        </div>
-
-        <div v-if="form.frequency === 'preset'" class="field-group" :class="{ error: errors.presetCron }">
-          <label class="field-label">Interval <span class="required">*</span></label>
-          <select v-model="form.presetCron" class="field-input">
-            <option v-for="p in PRESET_CRONS" :key="p.value" :value="p.value">
-              {{ p.label }}
-            </option>
-          </select>
-          <span v-if="errors.presetCron" class="field-error">{{ errors.presetCron }}</span>
-        </div>
-
-        <div
-          v-if="form.frequency === 'daily' || form.frequency === 'weekly'"
-          class="field-group"
-          :class="{ error: errors.time }"
-        >
-          <label class="field-label">Time <span class="required">*</span></label>
-          <input v-model="form.time" type="time" class="field-input field-input-sm" />
-          <span v-if="errors.time" class="field-error">{{ errors.time }}</span>
-        </div>
-
-        <div v-if="form.frequency === 'weekly'" class="field-group" :class="{ error: errors.days }">
-          <label class="field-label">Days of Week <span class="required">*</span></label>
-          <div class="days-grid">
-            <button
-              v-for="(label, idx) in DAY_LABELS"
-              :key="idx"
-              type="button"
-              class="day-btn"
-              :class="{ selected: form.days.includes(idx) }"
-              @click="toggleDay(idx)"
-            >
-              {{ label }}
-            </button>
-          </div>
-          <span v-if="errors.days" class="field-error">{{ errors.days }}</span>
-        </div>
-
-        <div v-if="form.frequency === 'custom'" class="field-group" :class="{ error: errors.customCron }">
-          <label class="field-label">Cron Expression <span class="required">*</span></label>
-          <input
-            v-model="form.customCron"
-            type="text"
-            class="field-input"
-            placeholder="e.g. 0 9 * * 1-5"
-          />
-          <span class="field-hint">Format: Minute Hour DayOfMonth Month DayOfWeek</span>
-          <span v-if="errors.customCron" class="field-error">{{ errors.customCron }}</span>
-        </div>
-
-        <div class="fields-row">
-          <div class="field-group">
-            <label class="field-label">Active From</label>
-            <input v-model="form.activeFrom" type="date" class="field-input" />
-          </div>
-          <div class="field-group">
-            <label class="field-label">Active Until <span class="optional">(optional)</span></label>
-            <input v-model="form.activeUntil" type="date" class="field-input" />
-          </div>
-        </div>
+        </section>
       </div>
 
-      <div class="drawer-footer">
-        <button type="button" class="btn-cancel" @click="emit('cancel')">Cancel</button>
-        <button type="button" class="btn-save" @click="handleSave">
+      <div class="modal-footer">
+        <button type="button" class="btn-ghost" @click="emit('cancel')">Cancel</button>
+        <button type="button" class="btn-primary" @click="handleSave">
           {{ schedule ? 'Save Changes' : 'Create Schedule' }}
         </button>
       </div>
     </div>
-  </div>
+  </BasicPopup>
 </template>
 
 <style lang="scss" scoped>
-.drawer-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(3px);
-  z-index: 300;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.drawer {
-  width: 28rem;
-  max-width: 100%;
-  height: 100%;
-  background: #fff;
+.schedule-modal {
   display: flex;
   flex-direction: column;
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-height: 90vh;
 }
 
-.drawer-header {
+.modal-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--rf-surface-border, #e2e8f0);
+  gap: 1rem;
+  padding: 1.375rem 1.5rem;
+  border-bottom: 1px solid var(--rf-surface-border);
   flex-shrink: 0;
+  background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
 
   h2 {
     margin: 0;
-    font-size: 1.0625rem;
+    font-size: 1.125rem;
     font-weight: 700;
     color: var(--rf-text-primary);
+    letter-spacing: -0.01em;
+  }
+
+  p {
+    margin: 0.25rem 0 0;
+    font-size: 0.8125rem;
+    color: var(--rf-text-secondary);
   }
 }
 
@@ -528,13 +461,15 @@ const handleSave = () => {
   width: 2rem;
   height: 2rem;
   border: 1px solid var(--rf-surface-border);
-  border-radius: 0.375rem;
-  background: transparent;
+  border-radius: 0.5rem;
+  background: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--rf-text-secondary);
+  flex-shrink: 0;
+  transition: all 0.15s ease;
 
   svg {
     width: 0.9375rem;
@@ -543,59 +478,102 @@ const handleSave = () => {
 
   &:hover {
     background: var(--rf-page-bg);
+    color: var(--rf-text-primary);
   }
 }
 
-.drawer-body {
-  flex: 1;
+.modal-body {
+  flex: 1 1 auto;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 1.25rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.125rem;
+  gap: 1rem;
+  max-height: calc(90vh - 8.75rem);
+  -webkit-overflow-scrolling: touch;
 }
 
-.section-divider {
+.form-section {
+  border: 1px solid var(--rf-surface-border);
+  border-radius: 0.75rem;
+  overflow: visible;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.section-title {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-top: 0.25rem;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--rf-text-primary);
+  background: var(--rf-page-bg);
+  border-bottom: 1px solid var(--rf-surface-border);
+}
 
-  span {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--rf-text-secondary);
-    white-space: nowrap;
-  }
+.section-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.375rem;
+  background: var(--rf-accent-light);
+  color: var(--rf-accent);
 
-  &::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--rf-surface-border);
+  svg {
+    width: 0.875rem;
+    height: 0.875rem;
   }
+}
+
+.section-content {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
 }
 
 .field-group {
   display: flex;
   flex-direction: column;
-  gap: 0.3125rem;
+  gap: 0.375rem;
+  min-width: 0;
 
-  &.error .field-input {
-    border-color: var(--rf-error, #ef4444);
+  &.error .field-control :deep(.dropdown-button),
+  &.error .rf-input {
+    border-color: var(--rf-error);
+  }
+}
+
+.field-control {
+  width: 100%;
+  min-width: 0;
+
+  :deep(.dropdown-container) {
+    width: 100%;
+  }
+
+  :deep(.dropdown-button) {
+    width: 100% !important;
+    max-width: 100%;
+    height: var(--rf-control-height, 2.5rem) !important;
+    min-height: var(--rf-control-height, 2.5rem) !important;
+    max-height: var(--rf-control-height, 2.5rem) !important;
   }
 }
 
 .field-label {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--rf-text-primary, #1e293b);
+  color: var(--rf-text-primary);
 
   .required {
     color: var(--rf-error);
-    margin-left: 0.125rem;
   }
 
   .optional {
@@ -604,24 +582,27 @@ const handleSave = () => {
   }
 }
 
-.field-input {
-  height: 2.25rem;
+.rf-input,
+.rf-select {
+  height: var(--rf-control-height, 2.5rem);
   padding: 0 0.75rem;
-  border: 1px solid var(--rf-surface-border, #e2e8f0);
+  border: 1px solid var(--rf-surface-border);
   border-radius: 0.375rem;
-  font-size: 0.875rem;
-  color: var(--rf-text-primary, #1e293b);
+  font-size: 0.8125rem;
+  box-sizing: border-box;
+  color: var(--rf-text-primary);
   background: #fff;
   outline: none;
-  user-select: text;
+  width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   &:focus {
     border-color: var(--rf-accent);
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
   }
 
-  &.field-input-sm {
-    max-width: 9rem;
+  &.rf-input-sm {
+    max-width: 10rem;
   }
 }
 
@@ -632,107 +613,39 @@ const handleSave = () => {
 }
 
 .field-hint {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   color: var(--rf-text-muted);
+  margin: 0;
 }
 
-.dropdown-wrapper {
-  position: relative;
-}
-
-.dropdown-trigger {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-  text-align: left;
-
-  .trigger-text {
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .chevron {
-    width: 1rem;
-    height: 1rem;
-    flex-shrink: 0;
-    color: var(--rf-text-secondary);
-    transition: transform 0.15s ease;
-
-    &.rotated {
-      transform: rotate(180deg);
-    }
-  }
-}
-
-.group-dropdown {
-  position: absolute;
-  top: calc(100% + 0.25rem);
-  left: 0;
-  right: 0;
-  z-index: 100;
-  background: #fff;
-  border: 1px solid var(--rf-surface-border);
-  border-radius: 0.5rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  max-height: 14rem;
-  overflow-y: auto;
-  padding: 0.375rem;
-}
-
-.group-option {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.625rem;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  user-select: none;
-
-  input[type='checkbox'] {
-    cursor: pointer;
-    accent-color: var(--rf-accent);
-  }
-
-  .option-name {
-    font-size: 0.8125rem;
-    color: var(--rf-text-primary);
-    font-weight: 500;
-  }
-
-  &.checked,
-  &:hover {
-    background: var(--rf-accent-light);
-  }
-}
-
-.dropdown-loading,
-.dropdown-empty {
-  padding: 0.75rem;
-  font-size: 0.8125rem;
-  color: var(--rf-text-muted);
-  text-align: center;
-}
-
-.radio-group {
+.freq-pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem 1.25rem;
+  gap: 0.5rem;
 }
 
-.radio-option {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.875rem;
-  color: var(--rf-text-primary);
+.freq-pill {
+  padding: 0.4375rem 0.875rem;
+  border: 1px solid var(--rf-surface-border);
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--rf-text-secondary);
+  background: #fff;
   cursor: pointer;
+  transition: all 0.15s ease;
 
-  input[type='radio'] {
-    accent-color: var(--rf-accent);
-    cursor: pointer;
+  &.active,
+  &:hover {
+    border-color: var(--rf-accent);
+    color: var(--rf-accent);
+    background: var(--rf-accent-light);
+  }
+
+  &.active {
+    background: var(--rf-accent);
+    border-color: var(--rf-accent);
+    color: #fff;
   }
 }
 
@@ -743,14 +656,14 @@ const handleSave = () => {
 }
 
 .day-btn {
-  width: 2.625rem;
-  height: 2.25rem;
+  width: 2.75rem;
+  height: 2.375rem;
   border: 1px solid var(--rf-surface-border);
-  border-radius: 0.375rem;
+  border-radius: 0.5rem;
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--rf-text-secondary);
-  background: transparent;
+  background: #fff;
   cursor: pointer;
   transition: all 0.15s ease;
 
@@ -769,27 +682,40 @@ const handleSave = () => {
 .fields-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 0.875rem;
 }
 
-.drawer-footer {
+.fields-row-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 640px) {
+  .fields-row,
+  .fields-row-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.modal-footer {
   padding: 1rem 1.5rem;
   border-top: 1px solid var(--rf-surface-border);
   display: flex;
   justify-content: flex-end;
   gap: 0.625rem;
   flex-shrink: 0;
+  background: #f8fafc;
 }
 
-.btn-cancel {
-  padding: 0.5rem 1rem;
+.btn-ghost {
+  padding: 0.5625rem 1.125rem;
   border: 1px solid var(--rf-surface-border);
-  border-radius: 0.375rem;
+  border-radius: 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--rf-text-secondary);
-  background: transparent;
+  background: #fff;
   cursor: pointer;
+  transition: all 0.15s ease;
 
   &:hover {
     border-color: var(--rf-text-secondary);
@@ -797,15 +723,16 @@ const handleSave = () => {
   }
 }
 
-.btn-save {
-  padding: 0.5rem 1.25rem;
+.btn-primary {
+  padding: 0.5625rem 1.25rem;
   border: none;
-  border-radius: 0.375rem;
+  border-radius: 0.5rem;
   font-size: 0.875rem;
   font-weight: 600;
   background: var(--rf-accent);
   color: #fff;
   cursor: pointer;
+  transition: background 0.15s ease;
 
   &:hover {
     background: var(--rf-accent-hover);

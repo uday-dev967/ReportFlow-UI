@@ -34,7 +34,6 @@ const route = useRoute();
   height: 100%;
   width: 100%;
   display: flex;
-  overflow: hidden;
 }
 
 .app-main {
@@ -48,7 +47,10 @@ const route = useRoute();
 .app-content {
   flex: 1;
   overflow-y: auto;
-  background-color: var(--rf-page-bg, #f1f5f9);
+  background-color: var(--rf-page-bg, #f8fafc);
+  background-image:
+    radial-gradient(ellipse at 0% 0%, rgba(37, 99, 235, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 100%, rgba(16, 185, 129, 0.03) 0%, transparent 50%);
 }
 
 #remIndicator {

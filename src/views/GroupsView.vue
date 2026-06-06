@@ -79,7 +79,8 @@ onMounted(() => {
 <style lang="scss" scoped>
 .groups-view {
   padding: 1.5rem;
-  background: var(--rf-page-bg, #f1f5f9);
+  max-width: var(--rf-content-max-width);
+  margin: 0 auto;
   min-height: 100%;
 }
 </style>

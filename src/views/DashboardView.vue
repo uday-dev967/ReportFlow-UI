@@ -194,12 +194,13 @@ onMounted(async () => {
 <style lang="scss" scoped>
 .dashboard-view {
   padding: 1.5rem;
-  background: var(--rf-page-bg, #f1f5f9);
+  max-width: var(--rf-content-max-width);
+  margin: 0 auto;
   min-height: 100%;
 }
 
 #dashboard-capture {
-  background: var(--rf-page-bg, #f1f5f9);
+  background: var(--rf-page-bg, #f8fafc);
 }
 
 .loading-state {

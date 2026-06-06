@@ -319,26 +319,14 @@ defineExpose({
                 disabled,
               }"
             >
-              <template v-if="multiple && selectedItems.length > 0">
-                <div class="chips-container">
-                  <OChip
-                    v-for="item in selectedItems"
-                    :key="getItemValue(item)"
-                    :chip="getItemText(item)"
-                    :closable="!disabled"
-                    @on-delete-chip="removeItem(item)"
-                  />
-                </div>
-              </template>
-              <!-- Regular text display -->
-              <span v-else class="button-text">{{ displayButtonText }}</span>
+              <span class="button-text">{{ displayButtonText }}</span>
             </slot>
 
             <svg
               class="dropdown-icon"
               :class="{ rotated: isMenuOpen }"
-              width="20"
-              height="20"
+              width="16"
+              height="16"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -408,28 +396,31 @@ defineExpose({
 
 .dropdown-button {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
+  height: var(--rf-control-height, 2.5rem);
+  padding: 0 0.625rem 0 0.75rem;
+  border: 1px solid var(--rf-surface-border, #e2e8f0);
   border-radius: 0.375rem;
-  background-color: white;
-  color: #374151;
-  font-size: 0.875rem;
+  background-color: #fff;
+  color: var(--rf-text-primary, #1e293b);
+  font-size: 0.8125rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.375rem;
   cursor: pointer;
-  transition: all 0.2s ease;
-  min-height: 2.5rem;
+  transition: all 0.15s ease;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .dropdown-button:hover:not(:disabled) {
-  border-color: #9ca3af;
+  border-color: #cbd5e1;
 }
 
 .dropdown-button:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: var(--rf-accent, #2563eb);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
 }
 
 .dropdown-button:disabled {
@@ -438,26 +429,24 @@ defineExpose({
 }
 
 .dropdown-button.is-open {
-  border-color: #3b82f6;
-}
-
-.chips-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  align-items: center;
-  flex: 1;
-  margin-right: 0.5rem;
+  border-color: var(--rf-accent, #2563eb);
 }
 
 .button-text {
   flex: 1;
+  min-width: 0;
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
 }
 
 .dropdown-icon {
+  width: 1rem;
+  height: 1rem;
   transition: transform 0.2s ease;
-  color: #6b7280;
+  color: var(--rf-text-secondary, #64748b);
   flex-shrink: 0;
 }
 

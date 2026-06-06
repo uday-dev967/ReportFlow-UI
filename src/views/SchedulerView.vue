@@ -10,7 +10,7 @@ import SendLogPanel from '@/components/scheduler/SendLogPanel.vue';
 const store = useSchedulerStore();
 const { success, error: toastError } = useToast();
 
-const drawerOpen = ref(false);
+const modalOpen = ref(false);
 const editingSchedule = ref(null);
 
 const activeScheduleCount = computed(
@@ -19,16 +19,16 @@ const activeScheduleCount = computed(
 
 const openCreate = () => {
   editingSchedule.value = null;
-  drawerOpen.value = true;
+  modalOpen.value = true;
 };
 
 const openEdit = (schedule) => {
   editingSchedule.value = schedule;
-  drawerOpen.value = true;
+  modalOpen.value = true;
 };
 
-const closeDrawer = () => {
-  drawerOpen.value = false;
+const closeModal = () => {
+  modalOpen.value = false;
   editingSchedule.value = null;
 };
 
@@ -37,7 +37,7 @@ const handleSave = async (formData) => {
   const res = await store.saveSchedule(formData, editId);
   if (res.ok) {
     success(editId ? 'Schedule updated' : 'Schedule created');
-    closeDrawer();
+    closeModal();
   } else {
     toastError(res.message || 'Save failed');
   }
@@ -81,10 +81,10 @@ onMounted(() => {
     <SendLogPanel :logs="store.sendLogs" :loading="store.logsLoading" />
 
     <ScheduleFormDrawer
-      v-if="drawerOpen"
+      v-if="modalOpen"
       :schedule="editingSchedule"
       @save="handleSave"
-      @cancel="closeDrawer"
+      @cancel="closeModal"
     />
   </div>
 </template>
@@ -92,18 +92,43 @@ onMounted(() => {
 <style lang="scss" scoped>
 .scheduler-view {
   padding: 1.5rem;
-  background: var(--rf-page-bg, #f1f5f9);
+  max-width: var(--rf-content-max-width);
+  margin: 0 auto;
   min-height: 100%;
 }
 
 .auto-send-banner {
-  margin-bottom: 1rem;
-  padding: 0.625rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
   background: var(--rf-success-light, #ecfdf5);
   border: 1px solid #a7f3d0;
-  border-radius: 0.5rem;
+  border-radius: 0.625rem;
   font-size: 0.8125rem;
   font-weight: 500;
   color: #047857;
+  box-shadow: var(--rf-surface-shadow);
+
+  &::before {
+    content: '';
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--rf-success);
+    flex-shrink: 0;
+    animation: pulse 2s ease infinite;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 </style>
