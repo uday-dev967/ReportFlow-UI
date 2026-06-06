@@ -92,7 +92,6 @@ const handleReset = () => {
           item-text="label"
           item-value="value"
           button-text="Select range"
-          button-width="100%"
           @update:model-value="selectedDateRange = $event"
         />
       </div>
@@ -104,7 +103,6 @@ const handleReset = () => {
           :model-value="selectedStates"
           multiple
           button-text="All States"
-          button-width="100%"
           @update:model-value="selectedStates = $event"
         />
       </div>
@@ -117,7 +115,6 @@ const handleReset = () => {
           item-text="text"
           item-value="value"
           button-text="All Regions"
-          button-width="100%"
           @update:model-value="selectedRegion = $event || ''"
         />
       </div>
@@ -130,7 +127,6 @@ const handleReset = () => {
           item-text="text"
           item-value="value"
           button-text="All Managers"
-          button-width="100%"
           @update:model-value="selectedManager = $event || ''"
         />
       </div>
@@ -141,7 +137,6 @@ const handleReset = () => {
           :items="filterOptions.reportTypes"
           :model-value="selectedReportType"
           button-text="Select report"
-          button-width="100%"
           @update:model-value="selectedReportType = $event"
         />
       </div>
@@ -176,6 +171,11 @@ const handleReset = () => {
   flex-direction: column;
   gap: 0.3125rem;
   min-width: 0;
+
+  :deep(.dropdown-container) {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 .filter-label {

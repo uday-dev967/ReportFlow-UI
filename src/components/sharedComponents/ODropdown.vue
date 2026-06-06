@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue';
 import OMenu from './OMenu.vue';
-import OChip from './OChip.vue';
 
 const props = defineProps({
   items: {
@@ -62,7 +61,11 @@ const props = defineProps({
   },
   buttonWidth: {
     type: [String, Number],
-    default: 'auto',
+    default: '100%',
+  },
+  fullWidth: {
+    type: Boolean,
+    default: true,
   },
   width: {
     type: [String, Number],
@@ -76,6 +79,12 @@ const menuRef = ref(null);
 const buttonRef = ref(null);
 const isMenuOpen = ref(false);
 const menuWidth = ref('auto');
+
+const buttonWidthStyle = computed(() => {
+  if (props.buttonWidth == null || props.buttonWidth === '100%') return undefined;
+  if (typeof props.buttonWidth === 'number') return { width: `${props.buttonWidth}px` };
+  return { width: props.buttonWidth };
+});
 
 // Computed dropdown width
 const dropdownWidth = computed(() => {
@@ -278,9 +287,10 @@ defineExpose({
 </script>
 
 <template>
-  <div class="dropdown-container">
+  <div class="dropdown-container" :class="{ 'dropdown-container--full': fullWidth }">
     <OMenu
       ref="menuRef"
+      class="dropdown-menu"
       :trigger-type="triggerType"
       :placement="placement"
       :offset="offset"
@@ -288,6 +298,7 @@ defineExpose({
       :close-on-esc="closeOnEsc"
       :disabled="disabled"
       :width="dropdownWidth"
+      :block="fullWidth"
       @open="handleMenuOpen"
       @close="handleMenuClose"
     >
@@ -301,7 +312,7 @@ defineExpose({
             class="dropdown-button"
             :class="{ 'is-open': isMenuOpen }"
             :disabled="disabled"
-            :style="{ width: buttonWidth }"
+            :style="buttonWidthStyle"
             type="button"
             @click.stop="toggleMenu"
           >
@@ -391,6 +402,13 @@ defineExpose({
 <style scoped>
 .dropdown-container {
   position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.dropdown-container--full :deep(.custom-menu-container),
+.dropdown-container--full :deep(.menu-trigger-element) {
+  display: block;
   width: 100%;
 }
 

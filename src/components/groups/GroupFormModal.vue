@@ -671,13 +671,14 @@ onMounted(async () => {
           <div class="config-grid">
             <div class="field-group" :class="{ error: errors.state }">
               <label class="field-label">State <span class="required">*</span></label>
-              <ODropdown
-                :items="filterOptions.states"
-                :model-value="form.state"
-                button-text="Select state"
-                button-width="100%"
-                @update:model-value="form.state = $event || ''"
-              />
+              <div class="field-control">
+                <ODropdown
+                  :items="filterOptions.states"
+                  :model-value="form.state"
+                  button-text="Select state"
+                  @update:model-value="form.state = $event || ''"
+                />
+              </div>
               <span v-if="errors.state" class="field-error">{{ errors.state }}</span>
             </div>
 
@@ -688,15 +689,16 @@ onMounted(async () => {
 
             <div class="field-group full-width">
               <label class="field-label">Assigned Manager</label>
-              <ODropdown
-                :items="managerItems"
-                :model-value="form.manager"
-                item-text="text"
-                item-value="value"
-                button-text="Select manager"
-                button-width="100%"
-                @update:model-value="form.manager = $event || ''"
-              />
+              <div class="field-control">
+                <ODropdown
+                  :items="managerItems"
+                  :model-value="form.manager"
+                  item-text="text"
+                  item-value="value"
+                  button-text="Select manager"
+                  @update:model-value="form.manager = $event || ''"
+                />
+              </div>
             </div>
 
             <div class="field-group full-width" :class="{ error: errors.reportTypes }">
@@ -1308,13 +1310,25 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
+  min-width: 0;
 
   &.full-width {
     grid-column: 1 / -1;
   }
 
-  &.error :deep(.input-wrapper) {
+  &.error :deep(.input-wrapper),
+  &.error .field-control :deep(.dropdown-button) {
     border-color: var(--rf-error);
+  }
+}
+
+.field-control {
+  width: 100%;
+  min-width: 0;
+
+  :deep(.dropdown-container) {
+    width: 100%;
+    min-width: 0;
   }
 }
 

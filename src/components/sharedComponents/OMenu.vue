@@ -74,6 +74,10 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  block: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 // Emits
@@ -459,7 +463,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="custom-menu-container" ref="menuContainer">
+  <div class="custom-menu-container" :class="{ 'custom-menu-container--block': block }" ref="menuContainer">
     <!-- Trigger element using a slot -->
     <div
       ref="triggerEl"
@@ -497,6 +501,16 @@ defineExpose({
 .custom-menu-container {
   position: relative;
   display: inline-block;
+
+  &--block {
+    display: block;
+    width: 100%;
+
+    .menu-trigger-element {
+      display: block;
+      width: 100%;
+    }
+  }
 
   .menu-content {
     background: white;

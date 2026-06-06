@@ -202,9 +202,8 @@ const handleSave = () => {
                   <ODropdown
                     :items="filterOptions.reportTypes"
                     :model-value="form.reportType"
-                    button-text="Select report type"
-                    button-width="100%"
-                    @update:model-value="form.reportType = $event"
+                  button-text="Select report type"
+                  @update:model-value="form.reportType = $event"
                   />
                 </div>
               </div>
@@ -219,7 +218,6 @@ const handleSave = () => {
                     item-value="value"
                     multiple
                     button-text="Select groups"
-                    button-width="100%"
                     no-data-text="No groups available"
                     @update:model-value="form.groupIds = $event"
                   />
@@ -251,7 +249,6 @@ const handleSave = () => {
                   item-text="label"
                   item-value="value"
                   button-text="Select date range"
-                  button-width="100%"
                   @update:model-value="form.filterDateRange = $event"
                 />
               </div>
@@ -277,7 +274,6 @@ const handleSave = () => {
                     :model-value="form.filterStates"
                     multiple
                     button-text="All States"
-                    button-width="100%"
                     @update:model-value="form.filterStates = $event"
                   />
                 </div>
@@ -290,7 +286,6 @@ const handleSave = () => {
                     :model-value="form.filterRegions"
                     multiple
                     button-text="All Regions"
-                    button-width="100%"
                     @update:model-value="form.filterRegions = $event"
                   />
                 </div>
@@ -303,7 +298,6 @@ const handleSave = () => {
                     :model-value="form.filterManagers"
                     multiple
                     button-text="All Managers"
-                    button-width="100%"
                     @update:model-value="form.filterManagers = $event"
                   />
                 </div>
@@ -353,7 +347,6 @@ const handleSave = () => {
                   item-text="label"
                   item-value="value"
                   button-text="Select interval"
-                  button-width="100%"
                   @update:model-value="form.presetCron = $event"
                 />
               </div>
