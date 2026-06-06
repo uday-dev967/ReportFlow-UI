@@ -1,7 +1,7 @@
 @use './variables' as *;
 
 * {
-  font-family: $unbounded-font;
+  font-family: $primary-font;
 }
 
 *::-webkit-scrollbar {
@@ -20,7 +20,7 @@
 
 @media only screen and (max-width: 820px) {
   * {
-    font-family: $unbounded-font;
+    font-family: $primary-font;
   }
 
   html {
